@@ -3,10 +3,10 @@ requires = ["setuptools>=64", "setuptools-scm>=8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ETL-MEDS"
+name = "SICdb-MEDS"
 dynamic = ["version"]
 authors = [
-  { name="Matthew McDermott", email="mattmcdermott8@gmail.com" },
+  { name="Robin van de Water", email="robin.vandewater@hpi.de" },
 ]
 description = "A template ETL pipeline to extract arbitrary data into the MEDS format."
 readme = "README.md"
@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "meds-transforms>=0.1", "requests", "beautifulsoup4", "hydra-core"
+  "meds-transforms>=0.1", "requests", "beautifulsoup4", "hydra-core", "loguru"
 ]
 
 [tool.setuptools_scm]
@@ -29,7 +29,7 @@ local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
 [project.scripts]
-MEDS_extract-sample_dataset = "ETL_MEDS.__main__:main"
+MEDS_extract-SICdb= "SICdb_MEDS.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/mmcdermott/ETL_MEDS_Template"

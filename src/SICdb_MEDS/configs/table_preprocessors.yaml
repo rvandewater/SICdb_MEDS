@@ -1,0 +1,5 @@
+cases:
+  offset_col:
+    - "AdmissionYear"
+  pseudotime_col:
+    - "AdmissionYear"

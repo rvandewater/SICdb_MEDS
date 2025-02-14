@@ -3,7 +3,7 @@ from importlib.resources import files
 
 from omegaconf import OmegaConf
 
-__package_name__ = "ETL_MEDS"
+__package_name__ = "SICdb_MEDS"
 try:
     __version__ = version(__package_name__)
 except PackageNotFoundError:  # pragma: no cover
@@ -16,6 +16,7 @@ RUNNER_CFG = files(__package_name__).joinpath("configs/runner.yaml")
 PRE_MEDS_PY = files(__package_name__).joinpath("pre_MEDS.py")
 PRE_MEDS_CFG = files(__package_name__).joinpath("configs/pre_MEDS.yaml")
 DATASET_CFG = files(__package_name__).joinpath("dataset.yaml")
+TABLE_PROCESSOR_CFG = files(__package_name__).joinpath("configs/table_preprocessors.yaml")
 
 dataset_info = OmegaConf.load(DATASET_CFG)
 
