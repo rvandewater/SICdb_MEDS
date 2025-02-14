@@ -130,7 +130,7 @@ def join_and_get_pseudotime_fntr(
         """
 
         pseudotimes = [
-            (ORIGIN_PSUEDOTIME + pl.duration(minutes=pl.col(offset))).alias(pseudotime)
+            (ORIGIN_PSUEDOTIME + pl.duration(seconds=pl.col(offset))).alias(pseudotime)
             for pseudotime, offset in zip(pseudotime_col, offset_col)
         ]
 
@@ -143,7 +143,7 @@ def join_and_get_pseudotime_fntr(
         logger.info(f"Joining {table_name} to patient table...")
         logger.info(df.collect_schema())
         # Join the patient table to the data table, INSPIRE only has subject_id as key
-        return df.join(patient_df, on=SUBJECT_ID, how="inner").select(
+        return df.join(patient_df, on=ADMISSION_ID, how="inner").select(
             SUBJECT_ID, ADMISSION_ID, *pseudotimes, *output_data_cols
         )
 
@@ -155,7 +155,7 @@ ICD_DFS_TO_FIX = {
 }
 def load_raw_file(fp: Path) -> pl.LazyFrame:
     """Loads a raw file into a Polars DataFrame."""
-    return pl.read_csv(fp)
+    return pl.scan_csv(fp)
 
 def main(cfg: DictConfig) -> None:
     """Performs pre-MEDS data wrangling for INSERT DATASET NAME HERE."""
@@ -181,6 +181,11 @@ def main(cfg: DictConfig) -> None:
 
     dfs_to_load = {}
     seen_fps = {}
+
+    for table_name, preprocessor_cfg in preprocessors.items():
+        print(f"  Adding preprocessor for {table_name}:\n{OmegaConf.to_yaml(preprocessor_cfg)}")
+        functions[table_name] = join_and_get_pseudotime_fntr(table_name=table_name, **preprocessor_cfg)
+
     unused_tables = {}
     patient_out_fp = MEDS_input_dir / "patient.parquet"
     link_out_fp = MEDS_input_dir / "link_patient_to_admission.parquet"
@@ -226,9 +231,9 @@ def main(cfg: DictConfig) -> None:
         df = load_raw_file(in_fp)
         # if pfx in ["labs", "vitals", "ward_vitals"]:
         #     df = process_abbreviations(df, pfx, parameters)
-        if in_fp == input_dir / "operations.csv":
-            department_fp = input_dir / "department.csv"
-            department_df = load_raw_file(department_fp)
+        # if in_fp == input_dir / "operations.csv":
+        #     department_fp = input_dir / "department.csv"
+        #     department_df = load_raw_file(department_fp)
             # df = process_operations(df, department_df)
         fn = functions[pfx]
         processed_df = fn(df, patient_df)

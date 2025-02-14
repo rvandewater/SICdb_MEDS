@@ -13,6 +13,14 @@ patient:
       - SEX
       - col(Sex)
     time: null
+laboratory:
+  lab:
+    code:
+      - LAB
+      - col(LaboratoryID)
+    time: col(Time)
+    numeric_value: col(LaboratoryValue)
+
 #hosp/admissions:
 #  ed_registration:
 #    code: ED_REGISTRATION

@@ -3,3 +3,12 @@ cases:
     - "AdmissionYear"
   pseudotime_col:
     - "AdmissionYear"
+
+laboratory:
+  offset_col:
+    - "Offset"
+  pseudotime_col:
+    - "Time"
+  output_data_cols:
+    - "LaboratoryID"
+    - "LaboratoryValue"
