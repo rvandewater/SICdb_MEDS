@@ -20,6 +20,8 @@ ORIGIN_PSUEDOTIME = pl.datetime(year=2011, month=1, day=1) + 0.5 * (
     pl.datetime(year=2020, month=12, day=31) - pl.datetime(year=2011, month=1, day=1)
 )
 
+
+
 def get_patient_link(df: pl.LazyFrame) -> pl.LazyFrame:
     """
     Process the operations table to get the patient table and the link table.
@@ -61,6 +63,7 @@ def join_and_get_pseudotime_fntr(
     table_name: str,
     offset_col: str | list[str],
     pseudotime_col: str | list[str],
+    reference_col: str | list[str] | None = None,
     output_data_cols: list[str] | None = None,
     warning_items: list[str] | None = None,
 ) -> Callable[[pl.LazyFrame, pl.LazyFrame], pl.LazyFrame]:
@@ -104,10 +107,15 @@ def join_and_get_pseudotime_fntr(
     if output_data_cols is None:
         output_data_cols = []
 
+    if reference_col is None:
+        reference_col = []
+
     if isinstance(offset_col, str):
         offset_col = [offset_col]
     if isinstance(pseudotime_col, str):
         pseudotime_col = [pseudotime_col]
+    if isinstance(reference_col, str):
+        reference_col = [reference_col]
 
     if len(offset_col) != len(pseudotime_col):
         raise ValueError(
@@ -115,7 +123,7 @@ def join_and_get_pseudotime_fntr(
             f"{len(offset_col)} and {len(pseudotime_col)}, respectively."
         )
 
-    def fn(df: pl.LazyFrame, patient_df: pl.LazyFrame) -> pl.LazyFrame:
+    def fn(df: pl.LazyFrame, patient_df: pl.LazyFrame, references_df: pl.LazyFrame) -> pl.LazyFrame:
         f"""Takes the {table_name} table and converts it to a form that includes pseudo-timestamps.
 
         The output of this process is ultimately converted to events via the `{table_name}` key in the
@@ -143,16 +151,16 @@ def join_and_get_pseudotime_fntr(
         logger.info(f"Joining {table_name} to patient table...")
         logger.info(df.collect_schema())
         # Join the patient table to the data table, INSPIRE only has subject_id as key
-        return df.join(patient_df, on=ADMISSION_ID, how="inner").select(
-            SUBJECT_ID, ADMISSION_ID, *pseudotimes, *output_data_cols
-        )
+        joined = df.join(patient_df, on=ADMISSION_ID, how="inner")
+        if len(reference_col) > 0:
+            joined = joined.join(references_df, left_on=reference_col, right_on="ReferenceGlobalID")
+        return joined.select(
+                SUBJECT_ID, ADMISSION_ID, *pseudotimes, *output_data_cols)
+
+
 
     return fn
-FUNCTIONS = {
-}
 
-ICD_DFS_TO_FIX = {
-}
 def load_raw_file(fp: Path) -> pl.LazyFrame:
     """Loads a raw file into a Polars DataFrame."""
     return pl.scan_csv(fp)
@@ -188,9 +196,10 @@ def main(cfg: DictConfig) -> None:
 
     unused_tables = {}
     patient_out_fp = MEDS_input_dir / "patient.parquet"
+    references_out_fp = MEDS_input_dir / "references.parquet"
     link_out_fp = MEDS_input_dir / "link_patient_to_admission.parquet"
 
-    if patient_out_fp.is_file():
+    if patient_out_fp.is_file() and link_out_fp.is_file():
         logger.info(f"Reloading processed patient df from {str(patient_out_fp.resolve())}")
         patient_df = pl.read_parquet(patient_out_fp, use_pyarrow=True).lazy()
         link_df = pl.read_parquet(link_out_fp, use_pyarrow=True).lazy()
@@ -206,6 +215,17 @@ def main(cfg: DictConfig) -> None:
         patient_df, link_df = get_patient_link(raw_admissions_df)
         write_lazyframe(patient_df, patient_out_fp)
         write_lazyframe(link_df, link_out_fp)
+
+    if references_out_fp.is_file():
+        logger.info(f"Reloading processed references df from {str(references_out_fp.resolve())}")
+        references_df = pl.read_parquet(references_out_fp, use_pyarrow=True).lazy()
+    else:
+        logger.info("Processing references table first...")
+        references_fp = input_dir / "d_references.csv.gz"
+        logger.info(f"Loading {str(references_fp.resolve())}...")
+        references_df = load_raw_file(references_fp)
+        write_lazyframe(references_df, references_out_fp)
+
 
     patient_df = patient_df.join(link_df, on=SUBJECT_ID)
 
@@ -236,7 +256,7 @@ def main(cfg: DictConfig) -> None:
         #     department_df = load_raw_file(department_fp)
             # df = process_operations(df, department_df)
         fn = functions[pfx]
-        processed_df = fn(df, patient_df)
+        processed_df = fn(df, patient_df, references_df)
         # Sink throws errors, so we use collect instead
         processed_df.sink_parquet(out_fp)
         # processed_df.collect().write_parquet(out_fp)

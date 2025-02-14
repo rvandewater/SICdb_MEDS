@@ -1,14 +1,119 @@
+# OUTPUT DATA cols should never contain case_id or patient_id
 cases:
-  offset_col:
-    - "AdmissionYear"
-  pseudotime_col:
-    - "AdmissionYear"
+  offset_col: "AdmissionYear"
+  pseudotime_col: "AdmissionYear"
+  output_data_cols:
+    - "TimeOfStay"
+    - "ICUOffset"
+    - "saps3"
+    - "HospitalDischargeType"
+    - "HospitalDischargeDay"
+    - "HospitalStayDays"
+    - "DischargeState"
+    - "DischargeUnit"
+    - "OffsetOfDeath"
+    - "EstimatedSurvivalObservationTime"
+    - "Sex"
+    - "WeightOnAdmission"
+    - "HeightOnAdmission"
+    - "AgeOnAdmission"
+    - "HospitalUnit"
+    - "ReferringUnit"
+    - "ICD10Main"
+    - "ICD10MainText"
+    - "DiagnosisT2"
+    - "SurgicalSite"
+    - "HoursOfCRRT"
+    - "AdmissionUrgency"
+    - "AdmissionFormHasSepsis"
+    - "SurgicalAdmissionType"
+    - "OrbisDataAvailable"
+    - "HeartSurgeryAdditionalData"
+    - "HeartSurgeryCPBTime"
+    - "HeartSurgeryCrossClampTime"
+    - "HeartSurgeryBeginOffset"
+    - "HeartSurgeryEndOffset"
+    - "OffsetAfterFirstAdmission"
+
+#d_references:
+#  offset_col: "ReferenceOrder"
+##  pseudotime_col: "ReferenceOrder"
+#  output_data_cols:
+#    - "ReferenceGlobalID"
+#    - "ReferenceValue"
+#    - "ReferenceName"
+#    - "ReferenceDescription"
+#    - "ReferenceUnit"
+#    - "ReferenceType"
+#    - "Data"
+#    - "LOINC_code"
+#    - "LOINC_short"
+#    - "LOINC_long"
+
+data_float_h:
+  offset_col: "Offset"
+  pseudotime_col: "Offset"
+  reference_col: "DataID"
+  output_data_cols:
+    - "id"
+    - "Val"
+    - "cnt"
+    - "rawdata"
+    - "LOINC_code"
+    - "ReferenceValue"
+    - "ReferenceUnit"
 
 laboratory:
-  offset_col:
-    - "Offset"
-  pseudotime_col:
-    - "Time"
+  offset_col: "Offset"
+  pseudotime_col: "Offset"
+  reference_col: "LaboratoryID"
   output_data_cols:
-    - "LaboratoryID"
+    - "id"
     - "LaboratoryValue"
+    - "LaboratoryType"
+    - "LOINC_code"
+    - "LOINC_long"
+    - "ReferenceUnit"
+
+#data_ref:
+#  offset_col: "Offset"
+#  pseudotime_col: "Offset"
+#  reference_col: "RefID"
+#  output_data_cols:
+#    - "id"
+#    - "FieldID"
+#    - "RefID"
+#    - "LOINC_code"
+
+unitlog:
+  offset_col: "Offset"
+  pseudotime_col: "Offset"
+  reference_col: "id"
+  output_data_cols:
+    - "id"
+    - "LogState"
+    - "HospitalUnit"
+
+data_range:
+  offset_col: "Offset"
+  pseudotime_col: "Offset"
+  output_data_cols:
+    - "id"
+    - "DataID"
+    - "OffsetEnd"
+    - "Data"
+
+medication:
+  offset_col: "Offset"
+  pseudotime_col: "Offset"
+  reference_col: "DrugID"
+  output_data_cols:
+    - "id"
+    - "DrugID"
+    - "OffsetDrugEnd"
+    - "IsSingleDose"
+    - "Amount"
+    - "AmountPerMinute"
+    - "GivenState"
+    - "LOINC_code"
+    - "LOINC_long"

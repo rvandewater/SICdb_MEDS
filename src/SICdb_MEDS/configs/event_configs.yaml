@@ -17,9 +17,31 @@ laboratory:
   lab:
     code:
       - LAB
-      - col(LaboratoryID)
-    time: col(Time)
+      - LOINC
+      - col(LOINC_code)
+    time: col(Offset)
     numeric_value: col(LaboratoryValue)
+    text_value: col(LaboratoryType)
+
+medication:
+    medication:
+        code:
+        - MEDICATION
+        - col(DrugID)
+        time: col(Offset)
+        numeric_value: col(Amount)
+        text_value: col(AmountPerMinute)
+
+data_float_h:
+    vital:
+        code:
+        - VITAL
+        - col(ReferenceValue)
+        - col(ReferenceUnit)
+        time: col(Offset)
+        numeric_value: col(Val)
+        text_value: col(ReferenceValue)
+#        text_value: col(rawdata)
 
 #hosp/admissions:
 #  ed_registration:
