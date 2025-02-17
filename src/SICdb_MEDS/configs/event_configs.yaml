@@ -27,8 +27,17 @@ medication:
     medication:
         code:
         - MEDICATION
-        - col(DrugID)
+        - LOINC
+        - col(LOINC_code)
         time: col(Offset)
+        numeric_value: col(Amount)
+        text_value: col(AmountPerMinute)
+    medication_stop:
+        code:
+        - MEDICATION_END
+        - LOINC
+        - col(LOINC_code)
+        time: col(OffsetDrugEnd)
         numeric_value: col(Amount)
         text_value: col(AmountPerMinute)
 

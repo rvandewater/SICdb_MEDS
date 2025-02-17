@@ -1,17 +1,17 @@
 # OUTPUT DATA cols should never contain case_id or patient_id
 cases:
-  offset_col: "AdmissionYear"
-  pseudotime_col: "AdmissionYear"
+  offset_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset"]
+  pseudotime_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset"]
   output_data_cols:
     - "TimeOfStay"
-    - "ICUOffset"
+#    - "ICUOffset"
     - "saps3"
     - "HospitalDischargeType"
     - "HospitalDischargeDay"
     - "HospitalStayDays"
     - "DischargeState"
     - "DischargeUnit"
-    - "OffsetOfDeath"
+#    - "OffsetOfDeath"
     - "EstimatedSurvivalObservationTime"
     - "Sex"
     - "WeightOnAdmission"
@@ -29,11 +29,11 @@ cases:
     - "SurgicalAdmissionType"
     - "OrbisDataAvailable"
     - "HeartSurgeryAdditionalData"
-    - "HeartSurgeryCPBTime"
+    - "HeartSurgeryCPBTime" # From ICU admission offset
     - "HeartSurgeryCrossClampTime"
-    - "HeartSurgeryBeginOffset"
-    - "HeartSurgeryEndOffset"
-    - "OffsetAfterFirstAdmission"
+#    - "HeartSurgeryBeginOffset"
+#    - "HeartSurgeryEndOffset"
+    #- "OffsetAfterFirstAdmission"
 
 #d_references:
 #  offset_col: "ReferenceOrder"
@@ -95,22 +95,22 @@ unitlog:
     - "HospitalUnit"
 
 data_range:
-  offset_col: "Offset"
-  pseudotime_col: "Offset"
+  offset_col: ["Offset", "OffsetEnd"]
+  pseudotime_col: ["Offset", "OffsetEnd"]
   output_data_cols:
     - "id"
     - "DataID"
-    - "OffsetEnd"
+#    - "OffsetEnd"
     - "Data"
 
 medication:
-  offset_col: "Offset"
-  pseudotime_col: "Offset"
+  offset_col: ["Offset", "OffsetDrugEnd"]
+  pseudotime_col: ["Offset", "OffsetDrugEnd"]
   reference_col: "DrugID"
   output_data_cols:
     - "id"
     - "DrugID"
-    - "OffsetDrugEnd"
+#    - "OffsetDrugEnd"
     - "IsSingleDose"
     - "Amount"
     - "AmountPerMinute"

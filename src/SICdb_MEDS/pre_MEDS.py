@@ -15,7 +15,9 @@ from MEDS_transforms.extract.utils import get_supported_fp
 
 ADMISSION_ID = "CaseID"
 SUBJECT_ID = "PatientID"
-
+DATASET_NAME = "SICdb"
+DATA_FILE_EXTENSIONS = ["*.parquet", "*.csv", "*.csv.gz"]
+IGNORE_TABLES=
 ORIGIN_PSUEDOTIME = pl.datetime(year=2011, month=1, day=1) + 0.5 * (
     pl.datetime(year=2020, month=12, day=31) - pl.datetime(year=2011, month=1, day=1)
 )
@@ -33,16 +35,13 @@ def get_patient_link(df: pl.LazyFrame) -> pl.LazyFrame:
     The output of this process is ultimately converted to events via the `patient` key in the
     `configs/event_configs.yaml` file.
     """
-    # All patients who received surgery under general, neuraxial, regional, and monitored anesthesia care
-    # between January 2011 and December 2020 at SNUH were included.
-    # TODO: Check if we can find a more sophisticated way to calculate the origin pseudotime
-    # df.sort(SUBJECT_ID, ADMISSION_ID)
-    origin_pseudotime = ORIGIN_PSUEDOTIME
+    # Middle of the year
+    admission_time = pl.datetime(year=pl.col("AdmissionYear"), month=7, day=1)
     age_in_years = pl.col("AgeOnAdmission")
     age_in_days = age_in_years * 365.25
     # We assume that the patient was born at the midpoint of the year as we don't know the actual birthdate
-    pseudo_date_of_birth = origin_pseudotime - pl.duration(days=(age_in_days - 365.25 / 2))
-    pseudo_date_of_death = origin_pseudotime + pl.duration(seconds=pl.col("OffsetOfDeath"))
+    pseudo_date_of_birth =  admission_time - pl.duration(days=age_in_days)
+    pseudo_date_of_death = admission_time + pl.duration(seconds=pl.col("OffsetOfDeath"))
 
     return (
         df.sort(by="AdmissionYear")
@@ -52,7 +51,7 @@ def get_patient_link(df: pl.LazyFrame) -> pl.LazyFrame:
             SUBJECT_ID,
             pseudo_date_of_birth.alias("date_of_birth"),
             "Sex",
-            origin_pseudotime.alias("first_admitted_at_time"),
+            admission_time.alias("first_admitted_at_time"),
             pseudo_date_of_death.alias("date_of_death"),
         ),
         df.select(SUBJECT_ID, ADMISSION_ID),
@@ -122,6 +121,9 @@ def join_and_get_pseudotime_fntr(
             "There must be the same number of `offset_col`s and `pseudotime_col`s specified. Got "
             f"{len(offset_col)} and {len(pseudotime_col)}, respectively."
         )
+    if set(offset_col) & set(output_data_cols) or set(pseudotime_col) & set(output_data_cols):
+        raise ValueError("There is an overlap between `offset_col` or `pseudotime_col` and `output_data_cols`: "
+                         f"{set(offset_col) & set(output_data_cols) | set(pseudotime_col) & set(output_data_cols)}")
 
     def fn(df: pl.LazyFrame, patient_df: pl.LazyFrame, references_df: pl.LazyFrame) -> pl.LazyFrame:
         f"""Takes the {table_name} table and converts it to a form that includes pseudo-timestamps.
@@ -144,7 +146,7 @@ def join_and_get_pseudotime_fntr(
 
         if warning_items:
             warning_lines = [
-                f"NOT SURE ABOUT THE FOLLOWING for {table_name} table. Check with the INSPIRE team:",
+                f"NOT SURE ABOUT THE FOLLOWING for {table_name} table. Check with the {DATASET_NAME} team:",
                 *(f"  - {item}" for item in warning_items),
             ]
             logger.warning("\n".join(warning_lines))
@@ -184,11 +186,10 @@ def main(cfg: DictConfig) -> None:
         )
         exit(0)
 
-    all_fps = list(input_dir.rglob("*/*.*"))
-    all_fps += list(input_dir.rglob("*.*"))
-
-    dfs_to_load = {}
-    seen_fps = {}
+    all_fps = []
+    for ext in DATA_FILE_EXTENSIONS:
+        all_fps.extend(input_dir.rglob(f"*/{ext}"))
+        all_fps.extend(input_dir.rglob(f"{ext}"))
 
     for table_name, preprocessor_cfg in preprocessors.items():
         print(f"  Adding preprocessor for {table_name}:\n{OmegaConf.to_yaml(preprocessor_cfg)}")
@@ -235,7 +236,7 @@ def main(cfg: DictConfig) -> None:
             logger.warning(f"Skipping {pfx} as it is not supported in this pipeline.")
             continue
         elif pfx not in functions:
-            logger.warning(f"No function needed for {pfx}. For INSPIRE, THIS IS UNEXPECTED")
+            logger.warning(f"No function needed for {pfx}. For {DATASET_NAME}, THIS IS UNEXPECTED")
             continue
 
         out_fp = MEDS_input_dir / f"{pfx}.parquet"
@@ -258,6 +259,7 @@ def main(cfg: DictConfig) -> None:
         fn = functions[pfx]
         processed_df = fn(df, patient_df, references_df)
         # Sink throws errors, so we use collect instead
+        logger.info(f"patient_df schema: {patient_df.collect_schema()}, processed_df schema: {processed_df.collect_schema()}")
         processed_df.sink_parquet(out_fp)
         # processed_df.collect().write_parquet(out_fp)
         logger.info(f"  * Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}")
