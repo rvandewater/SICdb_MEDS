@@ -1,7 +1,7 @@
 # OUTPUT DATA cols should never contain case_id or patient_id
 cases:
-  offset_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset"]
-  pseudotime_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset"]
+  offset_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset", "HeartSurgeryCPBTime"]
+  pseudotime_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset", "HeartSurgeryCPBTime"]
   output_data_cols:
     - "TimeOfStay"
 #    - "ICUOffset"
@@ -29,7 +29,7 @@ cases:
     - "SurgicalAdmissionType"
     - "OrbisDataAvailable"
     - "HeartSurgeryAdditionalData"
-    - "HeartSurgeryCPBTime" # From ICU admission offset
+#    - "HeartSurgeryCPBTime" # From ICU admission offset
     - "HeartSurgeryCrossClampTime"
 #    - "HeartSurgeryBeginOffset"
 #    - "HeartSurgeryEndOffset"
@@ -57,9 +57,9 @@ data_float_h:
   output_data_cols:
     - "id"
     - "Val"
-    - "cnt"
+#    - "cnt"
     - "rawdata"
-    - "LOINC_code"
+#    - "LOINC_code"
     - "ReferenceValue"
     - "ReferenceUnit"
 
@@ -115,5 +115,8 @@ medication:
     - "Amount"
     - "AmountPerMinute"
     - "GivenState"
-    - "LOINC_code"
-    - "LOINC_long"
+#    - "LOINC_code"
+#    - "LOINC_long"
+    - "ReferenceName"
+    - "ReferenceUnit"
+    - "ReferenceValue"

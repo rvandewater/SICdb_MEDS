@@ -8,11 +8,38 @@ patient:
     code:
       - MEDS_BIRTH
     time: col(date_of_birth)
+
+cases:
   sex: # M/F, Sex of the patient
     code:
       - SEX
       - col(Sex)
     time: null
+  weight:
+    code: WEIGHT
+    numeric_value: col(WeightOnAdmission)
+    time: col(AdmissionYear)
+  height:
+    code: HEIGHT
+    time: col(AdmissionYear)
+    numeric_value: col(HeightOnAdmission)
+  heart_surgery_begin:
+    code: HEART_SURGERY
+    time: col(HeartSurgeryBeginOffset)
+  heart_surgery_end:
+    code: HEART_SURGERY_END
+    time: col(HeartSurgeryEndOffset)
+  readmission:
+    code: READMISSION
+    time: col(OffsetAfterFirstAdmission)
+  ICD10Main:
+    code:
+      - DIAGNOSIS
+      - ICD10
+      - col(ICD10Main)
+    text_value: col(ICD10MainText)
+    time: null
+
 laboratory:
   lab:
     code:
@@ -27,21 +54,30 @@ medication:
     medication:
         code:
         - MEDICATION
-        - LOINC
-        - col(LOINC_code)
+        - col(ReferenceName)
         time: col(Offset)
         numeric_value: col(Amount)
         text_value: col(AmountPerMinute)
     medication_stop:
         code:
         - MEDICATION_END
-        - LOINC
-        - col(LOINC_code)
+        - col(ReferenceName)
+        - col(ReferenceValue)
+        - col(ReferenceUnit)
         time: col(OffsetDrugEnd)
         numeric_value: col(Amount)
         text_value: col(AmountPerMinute)
 
-data_float_h:
+#data_float_h:
+#    vital:
+#        code:
+#        - VITAL
+#        - col(ReferenceValue)
+#        - col(ReferenceUnit)
+#        time: col(Offset)
+#        numeric_value: col(Val)
+#        text_value: col(ReferenceValue)
+data_float_m:
     vital:
         code:
         - VITAL
