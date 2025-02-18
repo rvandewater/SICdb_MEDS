@@ -283,8 +283,8 @@ def join_and_get_pseudotime_fntr(
         ...      "date_of_death"],
         ...     ["How should we deal with op_id and subject_id?"]
         ... )
-        >>> df = load_raw_inspire_file("tests/operations_synthetic.csv")
-        >>> raw_admissions_df = load_raw_inspire_file("tests/operations_synthetic.csv")
+        >>> df = load_raw_file("Path(tests/operations_synthetic.csv"))
+        >>> raw_admissions_df = load_raw_file(Path("tests/operations_synthetic.csv"))
         >>> patient_df, link_df = get_patient_link(raw_admissions_df)
         >>> processed_df = func(df, patient_df)
         >>> type(processed_df)
