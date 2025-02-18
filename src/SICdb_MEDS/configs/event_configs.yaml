@@ -51,22 +51,22 @@ laboratory:
     text_value: col(LaboratoryType)
 
 medication:
-    medication:
-        code:
-        - MEDICATION
-        - col(ReferenceName)
-        time: col(Offset)
-        numeric_value: col(Amount)
-        text_value: col(AmountPerMinute)
-    medication_stop:
-        code:
-        - MEDICATION_END
-        - col(ReferenceName)
-        - col(ReferenceValue)
-        - col(ReferenceUnit)
-        time: col(OffsetDrugEnd)
-        numeric_value: col(Amount)
-        text_value: col(AmountPerMinute)
+  medication:
+    code:
+      - MEDICATION
+      - col(ReferenceName)
+    time: col(Offset)
+    numeric_value: col(Amount)
+    text_value: col(AmountPerMinute)
+  medication_stop:
+    code:
+      - MEDICATION_END
+      - col(ReferenceName)
+      - col(ReferenceValue)
+      - col(ReferenceUnit)
+    time: col(OffsetDrugEnd)
+    numeric_value: col(Amount)
+    text_value: col(AmountPerMinute)
 
 #data_float_h:
 #    vital:
@@ -78,14 +78,14 @@ medication:
 #        numeric_value: col(Val)
 #        text_value: col(ReferenceValue)
 data_float_m:
-    vital:
-        code:
-        - VITAL
-        - col(ReferenceValue)
-        - col(ReferenceUnit)
-        time: col(Offset)
-        numeric_value: col(Val)
-        text_value: col(ReferenceValue)
+  vital:
+    code:
+      - VITAL
+      - col(ReferenceValue)
+      - col(ReferenceUnit)
+    time: col(Offset)
+    numeric_value: col(Val)
+    text_value: col(ReferenceValue)
 #        text_value: col(rawdata)
 
 #hosp/admissions:

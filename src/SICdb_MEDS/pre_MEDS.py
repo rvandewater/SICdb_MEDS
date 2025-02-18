@@ -1,27 +1,22 @@
 """Performs pre-MEDS data wrangling for INSERT DATASET NAME HERE."""
-from functools import partial
-from pathlib import Path
+
+import struct
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import hydra
 import polars as pl
 from loguru import logger
 from MEDS_transforms.utils import get_shard_prefix, write_lazyframe
 from omegaconf import DictConfig, OmegaConf
-from polars import Datetime
 
 from SICdb_MEDS import TABLE_PROCESSOR_CFG
-from MEDS_transforms.extract.utils import get_supported_fp
-import csv, gzip, struct
-import os
 
 ADMISSION_ID = "CaseID"
 SUBJECT_ID = "PatientID"
 DATASET_NAME = "SICdb"
 DATA_FILE_EXTENSIONS = ["*.parquet", "*.csv", "*.csv.gz"]
-IGNORE_TABLES= ["d_references"]
+IGNORE_TABLES = ["d_references"]
 # ORIGIN_PSUEDOTIME = pl.datetime(year=2011, month=1, day=1) + 0.5 * (
 #     pl.datetime(year=2020, month=12, day=31) - pl.datetime(year=2011, month=1, day=1)
 # )
@@ -40,13 +35,14 @@ IGNORE_TABLES= ["d_references"]
 #                     continue
 #                 n = row['id']
 #                 for i in range(int(len(data) / 4)):
-#                     if data[i * 4] == 0 and data[i * 4 + 1] == 0 and data[i * 4 + 2] == 0 and data[i * 4 + 3] == 0:
+#                     if data[i * 4] == 0 and data[i * 4 + 1] == 0 and data[i * 4 + 2] == 0
+#                     and data[i * 4 + 3] == 0:
 #                         continue  # no null values
 #                     n += 1  # new primary key
 #                     newrow = row.copy()
 #                     newrow["id"] = n  # primary key
 #                     newrow["Val"] = struct.unpack('<f', data[i * 4:i * 4 + 4])[0]  # bytes to float
-#                     newrow["Offset"] = t + timedelta(minutes=i) #pl.duration(minutes=i) #i * 60  # new offset #
+#                     newrow["Offset"] = t + timedelta(minutes=i) #pl.duration(minutes=i) #i * 60 #new offset
 #                     # print(newrow)
 #                     rows.append(newrow)
 #             # print(rows[0])
@@ -83,6 +79,7 @@ IGNORE_TABLES= ["d_references"]
 #     }, streamable=True)
 #     return processed_df
 
+
 def is_hex(s):
     try:
         int(s, 16)
@@ -110,50 +107,59 @@ def unpack_waveform(df: pl.LazyFrame) -> pl.LazyFrame:
                 data = bytes.fromhex(rawdata[2:])
             except ValueError:
                 continue
-            n = row['id']
+            n = row["id"]
             for i in range(int(len(data) / 4)):
-                if data[i * 4:i * 4 + 4] == b'\x00\x00\x00\x00':
+                if data[i * 4 : i * 4 + 4] == b"\x00\x00\x00\x00":
                     continue
                 n += 1
                 offsets.append(t + timedelta(minutes=i))
                 ids.append(n)
-                vals.append(struct.unpack('<f', data[i * 4:i * 4 + 4])[0])
+                vals.append(struct.unpack("<f", data[i * 4 : i * 4 + 4])[0])
                 patient_ids.append(row["PatientID"])
                 case_ids.append(row["CaseID"])
                 reference_values.append(row["ReferenceValue"])
                 reference_units.append(row["ReferenceUnit"])
 
         if not offsets:
-            return pl.DataFrame(schema={
-                "PatientID": pl.Int64,
-                "CaseID": pl.Int64,
-                "Offset": pl.Datetime("us", None),
-                "id": pl.Int64,
-                "Val": pl.Float64,
-                "ReferenceValue": pl.String,
-                "ReferenceUnit": pl.String
-            })
+            return pl.DataFrame(
+                schema={
+                    "PatientID": pl.Int64,
+                    "CaseID": pl.Int64,
+                    "Offset": pl.Datetime("us", None),
+                    "id": pl.Int64,
+                    "Val": pl.Float64,
+                    "ReferenceValue": pl.String,
+                    "ReferenceUnit": pl.String,
+                }
+            )
 
-        return pl.DataFrame({
-            "PatientID": patient_ids,
-            "CaseID": case_ids,
-            "Offset": offsets,
-            "id": ids,
-            "Val": vals,
-            "ReferenceValue": reference_values,
-            "ReferenceUnit": reference_units if reference_units else [""] * len(ids)
-        })
+        return pl.DataFrame(
+            {
+                "PatientID": patient_ids,
+                "CaseID": case_ids,
+                "Offset": offsets,
+                "id": ids,
+                "Val": vals,
+                "ReferenceValue": reference_values,
+                "ReferenceUnit": reference_units if reference_units else [""] * len(ids),
+            }
+        )
 
-    processed_df = df.map_batches(process_batch, schema={
-        "PatientID": pl.Int64,
-        "CaseID": pl.Int64,
-        "Offset": pl.Datetime("us", None),
-        "id": pl.Int64,
-        "Val": pl.Float64,
-        "ReferenceValue": pl.String,
-        "ReferenceUnit": pl.String
-    }, streamable=True)
+    processed_df = df.map_batches(
+        process_batch,
+        schema={
+            "PatientID": pl.Int64,
+            "CaseID": pl.Int64,
+            "Offset": pl.Datetime("us", None),
+            "id": pl.Int64,
+            "Val": pl.Float64,
+            "ReferenceValue": pl.String,
+            "ReferenceUnit": pl.String,
+        },
+        streamable=True,
+    )
     return processed_df
+
 
 # def unpack_waveform_para(df: pl.LazyFrame) -> pl.LazyFrame:
 #     def process_batch(batch):
@@ -203,6 +209,7 @@ def unpack_waveform(df: pl.LazyFrame) -> pl.LazyFrame:
 #     }, streamable=True)
 #     return processed_df
 
+
 def get_patient_link(df: pl.LazyFrame) -> (pl.LazyFrame, pl.LazyFrame):
     """
     Process the operations table to get the patient table and the link table.
@@ -219,10 +226,11 @@ def get_patient_link(df: pl.LazyFrame) -> (pl.LazyFrame, pl.LazyFrame):
     age_in_years = pl.col("AgeOnAdmission")
     age_in_days = age_in_years * 365.25
     # We assume that the patient was born at the midpoint of the year as we don't know the actual birthdate
-    pseudo_date_of_birth =  admission_time - pl.duration(days=age_in_days)
+    pseudo_date_of_birth = admission_time - pl.duration(days=age_in_days)
     pseudo_date_of_death = admission_time + pl.duration(seconds=pl.col("OffsetOfDeath"))
-    sex = pl.col("Sex").map_elements(lambda x: "male" if x == 736 else "female" if x == 735 else str(x),
-                                     return_dtype=pl.String)
+    sex = pl.col("Sex").map_elements(
+        lambda x: "male" if x == 736 else "female" if x == 735 else str(x), return_dtype=pl.String
+    )
     return (
         df.sort(by="AdmissionYear")
         .group_by(SUBJECT_ID)
@@ -302,8 +310,10 @@ def join_and_get_pseudotime_fntr(
             f"{len(offset_col)} and {len(pseudotime_col)}, respectively."
         )
     if set(offset_col) & set(output_data_cols) or set(pseudotime_col) & set(output_data_cols):
-        raise ValueError("There is an overlap between `offset_col` or `pseudotime_col` and `output_data_cols`: "
-                         f"{set(offset_col) & set(output_data_cols) | set(pseudotime_col) & set(output_data_cols)}")
+        raise ValueError(
+            "There is an overlap between `offset_col` or `pseudotime_col` and `output_data_cols`: "
+            f"{set(offset_col) & set(output_data_cols) | set(pseudotime_col) & set(output_data_cols)}"
+        )
 
     def fn(df: pl.LazyFrame, patient_df: pl.LazyFrame, references_df: pl.LazyFrame) -> pl.LazyFrame:
         f"""Takes the {table_name} table and converts it to a form that includes pseudo-timestamps.
@@ -318,11 +328,6 @@ def join_and_get_pseudotime_fntr(
         Returns:
             The processed {table_name} data.
         """
-
-        # pseudotimes = [
-        #     ( patient_df.select("first_admitted_at_time") + pl.duration(seconds=pl.col(offset))).alias(pseudotime)
-        #     for pseudotime, offset in zip(pseudotime_col, offset_col)
-        # ]
         pseudotimes = [
             (pl.col("first_admitted_at_time") + pl.duration(seconds=pl.col(offset))).alias(pseudotime)
             for pseudotime, offset in zip(pseudotime_col, offset_col)
@@ -339,13 +344,15 @@ def join_and_get_pseudotime_fntr(
         joined = df.join(patient_df.lazy(), on=ADMISSION_ID, how="inner")
         if len(reference_col) > 0:
             joined = joined.join(references_df, left_on=reference_col, right_on="ReferenceGlobalID")
-        return joined.select(
-                SUBJECT_ID, ADMISSION_ID, *pseudotimes, *output_data_cols)
+        return joined.select(SUBJECT_ID, ADMISSION_ID, *pseudotimes, *output_data_cols)
+
     return fn
+
 
 def load_raw_file(fp: Path) -> pl.LazyFrame:
     """Loads a raw file into a Polars DataFrame."""
     return pl.scan_csv(fp)
+
 
 def main(cfg: DictConfig) -> None:
     """Performs pre-MEDS data wrangling for INSERT DATASET NAME HERE."""
@@ -411,7 +418,6 @@ def main(cfg: DictConfig) -> None:
         references_df = load_raw_file(references_fp)
         write_lazyframe(references_df, references_out_fp)
 
-
     patient_df = patient_df.join(link_df, on=SUBJECT_ID)
 
     for in_fp in all_fps:
@@ -425,7 +431,7 @@ def main(cfg: DictConfig) -> None:
 
         out_fp = MEDS_input_dir / f"{pfx}.parquet"
 
-        if out_fp.is_file(): #and not pfx == "data_float_h" :
+        if out_fp.is_file():  # and not pfx == "data_float_h" :
             logger.info(f"Done with {pfx}. Continuing")
             continue
 
@@ -435,32 +441,32 @@ def main(cfg: DictConfig) -> None:
         logger.info(f"Processing {pfx}...")
         df = load_raw_file(in_fp)
 
-            # df = pl.scan_csv(f'{path}/data_float_h.csv.gz')
-            #pl.scan_parquet(f'{path}/data_float_h.parquet')
+        # df = pl.scan_csv(f'{path}/data_float_h.csv.gz')
+        # pl.scan_parquet(f'{path}/data_float_h.parquet')
 
         # if pfx in ["labs", "vitals", "ward_vitals"]:
         #     df = process_abbreviations(df, pfx, parameters)
         # if in_fp == input_dir / "operations.csv":
         #     department_fp = input_dir / "department.csv"
         #     department_df = load_raw_file(department_fp)
-            # df = process_operations(df, department_df)
+        # df = process_operations(df, department_df)
         fn = functions[pfx]
         processed_df = fn(df, patient_df, references_df)
 
         # Sink throws errors, so we use collect instead
-        logger.info(f"patient_df schema: {patient_df.collect_schema()}, processed_df schema: {processed_df.collect_schema()}")
+        logger.info(
+            f"patient_df schema: {patient_df.collect_schema()}, "
+            f"processed_df schema: {processed_df.collect_schema()}"
+        )
         processed_df.sink_parquet(out_fp)
         if pfx == "data_float_h":
             df_parquet = pl.scan_parquet(out_fp).fill_null("Ref")
             unpacked_df = unpack_waveform(df_parquet)
-            logger.info(f"Unpacking waveform data. This may take a while...")
+            logger.info("Unpacking waveform data. This may take a while...")
             # unpacked_df.collect(new_streaming=True).write_parquet(MEDS_input_dir / 'data_float_m.parquet')
-            unpacked_df.sink_parquet(MEDS_input_dir / 'data_float_m.parquet')
+            unpacked_df.sink_parquet(MEDS_input_dir / "data_float_m.parquet")
         # processed_df.collect().write_parquet(out_fp)
-        logger.info(f"  * Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}")
-
+        logger.info(f"Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}")
 
     logger.info(f"Done! All dataframes processed and written to {str(MEDS_input_dir.resolve())}")
     return
-
-

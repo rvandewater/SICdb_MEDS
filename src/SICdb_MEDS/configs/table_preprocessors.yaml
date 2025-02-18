@@ -1,17 +1,33 @@
 # OUTPUT DATA cols should never contain case_id or patient_id
 cases:
-  offset_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset", "HeartSurgeryCPBTime"]
-  pseudotime_col: ["AdmissionYear", "ICUOffset","OffsetAfterFirstAdmission", "HeartSurgeryBeginOffset", "HeartSurgeryEndOffset", "HeartSurgeryCPBTime"]
+  offset_col:
+    [
+      "AdmissionYear",
+      "ICUOffset",
+      "OffsetAfterFirstAdmission",
+      "HeartSurgeryBeginOffset",
+      "HeartSurgeryEndOffset",
+      "HeartSurgeryCPBTime",
+    ]
+  pseudotime_col:
+    [
+      "AdmissionYear",
+      "ICUOffset",
+      "OffsetAfterFirstAdmission",
+      "HeartSurgeryBeginOffset",
+      "HeartSurgeryEndOffset",
+      "HeartSurgeryCPBTime",
+    ]
   output_data_cols:
     - "TimeOfStay"
-#    - "ICUOffset"
+    #    - "ICUOffset"
     - "saps3"
     - "HospitalDischargeType"
     - "HospitalDischargeDay"
     - "HospitalStayDays"
     - "DischargeState"
     - "DischargeUnit"
-#    - "OffsetOfDeath"
+    #    - "OffsetOfDeath"
     - "EstimatedSurvivalObservationTime"
     - "Sex"
     - "WeightOnAdmission"
@@ -29,11 +45,11 @@ cases:
     - "SurgicalAdmissionType"
     - "OrbisDataAvailable"
     - "HeartSurgeryAdditionalData"
-#    - "HeartSurgeryCPBTime" # From ICU admission offset
+    #    - "HeartSurgeryCPBTime" # From ICU admission offset
     - "HeartSurgeryCrossClampTime"
 #    - "HeartSurgeryBeginOffset"
 #    - "HeartSurgeryEndOffset"
-    #- "OffsetAfterFirstAdmission"
+#- "OffsetAfterFirstAdmission"
 
 #d_references:
 #  offset_col: "ReferenceOrder"
@@ -57,9 +73,9 @@ data_float_h:
   output_data_cols:
     - "id"
     - "Val"
-#    - "cnt"
+    #    - "cnt"
     - "rawdata"
-#    - "LOINC_code"
+    #    - "LOINC_code"
     - "ReferenceValue"
     - "ReferenceUnit"
 
@@ -100,7 +116,7 @@ data_range:
   output_data_cols:
     - "id"
     - "DataID"
-#    - "OffsetEnd"
+    #    - "OffsetEnd"
     - "Data"
 
 medication:
@@ -110,13 +126,13 @@ medication:
   output_data_cols:
     - "id"
     - "DrugID"
-#    - "OffsetDrugEnd"
+    #    - "OffsetDrugEnd"
     - "IsSingleDose"
     - "Amount"
     - "AmountPerMinute"
     - "GivenState"
-#    - "LOINC_code"
-#    - "LOINC_long"
+    #    - "LOINC_code"
+    #    - "LOINC_long"
     - "ReferenceName"
     - "ReferenceUnit"
     - "ReferenceValue"
