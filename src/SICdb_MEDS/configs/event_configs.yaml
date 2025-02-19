@@ -68,16 +68,7 @@ medication:
     numeric_value: col(Amount)
     text_value: col(AmountPerMinute)
 
-#data_float_h:
-#    vital:
-#        code:
-#        - VITAL
-#        - col(ReferenceValue)
-#        - col(ReferenceUnit)
-#        time: col(Offset)
-#        numeric_value: col(Val)
-#        text_value: col(ReferenceValue)
-data_float_m:
+data_float_h:
   vital:
     code:
       - VITAL
@@ -86,6 +77,15 @@ data_float_m:
     time: col(Offset)
     numeric_value: col(Val)
     text_value: col(ReferenceValue)
+#data_float_m:
+#  vital:
+#    code:
+#      - VITAL
+#      - col(ReferenceValue)
+#      - col(ReferenceUnit)
+#    time: col(Offset)
+#    numeric_value: col(Val)
+#    text_value: col(ReferenceValue)
 #        text_value: col(rawdata)
 
 #hosp/admissions:

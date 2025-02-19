@@ -12,6 +12,7 @@ stage_runner_fp: null
 do_download: True
 do_overwrite: False
 do_demo: False
+do_process_waveform: False
 
 log_dir: ${root_output_dir}/.logs
 

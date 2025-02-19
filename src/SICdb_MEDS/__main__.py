@@ -38,7 +38,11 @@ def main(cfg: DictConfig):
             download_data(raw_input_dir, dataset_info)
     else:  # pragma: no cover
         logger.info("Skipping data download.")
-
+    if cfg.do_process_waveform:
+        logger.warning(
+            "Processing waveform data is enabled; "
+            "this takes an extra hour and can take up to 100GB in RAM with current MEDS_transforms."
+        )
     # Step 1: Pre-MEDS Data Wrangling
     if HAS_PRE_MEDS:
         pre_MEDS_transform(cfg)

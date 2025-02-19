@@ -26,7 +26,6 @@ pip install SICdb_MEDS # you can do this locally or via PyPI
 MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR
 ```
 
-
 ## Citation
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
