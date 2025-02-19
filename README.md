@@ -10,6 +10,8 @@
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/SICdb_MEDS#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/SICdb_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/SICdb_MEDS.svg)](https://github.com/rvandewater/SICdb_MEDS/graphs/contributors)
+[![DOI](https://zenodo.org/badge/932832366.svg)](https://doi.org/10.5281/zenodo.14893938)
+
 
 The SICdb dataset offers insights into over 27 thousand intensive care admissions, including therapies and data on
 preceding surgeries. Data were collected between 2013 and 2021 from four different intensive care units at the
@@ -28,13 +30,11 @@ MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR
 # or, if you have the data already downloaded
 MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_download=False
 
-# or, if you want enable waveform extraction and processing
+# or, if you want enable waveform extraction and processing (takes significantly longer and up to 100GB of RAM)
 MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
 ```
 
-When you run this, the program will:
 
-```
 
 ## Citation
 
