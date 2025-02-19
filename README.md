@@ -33,6 +33,7 @@ MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
 ```
 
 When you run this, the program will:
+
 ```
 
 ## Citation
@@ -40,23 +41,25 @@ When you run this, the program will:
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
 
 ```
+
 @article{rodemundHarnessingBigData2024,
-	title = {Harnessing {Big} {Data} in {Critical} {Care}: {Exploring} a new {European} {Dataset}},
-	volume = {11},
-	copyright = {2024 The Author(s)},
-	issn = {2052-4463},
-	shorttitle = {Harnessing {Big} {Data} in {Critical} {Care}},
-	url = {https://www.nature.com/articles/s41597-024-03164-9},
-	doi = {10.1038/s41597-024-03164-9},
-	language = {en},
-	number = {1},
-	urldate = {2024-04-04},
-	journal = {Scientific Data},
-	author = {Rodemund, Niklas and Wernly, Bernhard and Jung, Christian and Cozowicz, Crispiana and Koköfer, Andreas},
-	month = mar,
-	year = {2024},
-	note = {Publisher: Nature Publishing Group},
-	keywords = {Clinical trial design, Experimental models of disease},
-	pages = {320},
+title = {Harnessing {Big} {Data} in {Critical} {Care}: {Exploring} a new {European} {Dataset}},
+volume = {11},
+copyright = {2024 The Author(s)},
+issn = {2052-4463},
+shorttitle = {Harnessing {Big} {Data} in {Critical} {Care}},
+url = {https://www.nature.com/articles/s41597-024-03164-9},
+doi = {10.1038/s41597-024-03164-9},
+language = {en},
+number = {1},
+urldate = {2024-04-04},
+journal = {Scientific Data},
+author = {Rodemund, Niklas and Wernly, Bernhard and Jung, Christian and Cozowicz, Crispiana and Koköfer, Andreas},
+month = mar,
+year = {2024},
+note = {Publisher: Nature Publishing Group},
+keywords = {Clinical trial design, Experimental models of disease},
+pages = {320},
 }
+
 ```
