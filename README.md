@@ -31,6 +31,7 @@ See the [MIMIC-IV MEDS Extraction ETL](https://github.com/mmcdermott/MIMIC_IV_ME
 ## Citation
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
+
 ```
 @article{rodemundHarnessingBigData2024,
 	title = {Harnessing {Big} {Data} in {Critical} {Care}: {Exploring} a new {European} {Dataset}},
