@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "SICdb_MEDS ETL"
-version: "0.3.3"
+version: "0.0.1"
 doi: ""
 authors:
   - family-names: "van de Water"
