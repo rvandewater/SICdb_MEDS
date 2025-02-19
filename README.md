@@ -21,12 +21,11 @@ and machine learning-based research. (source: https://www.sicdb.com/Documentatio
 ## Usage
 
 ```bash
-pip install PACKAGE_NAME # you can do this locally or via PyPI
+pip install SICdb_MEDS # you can do this locally or via PyPI
 # Download your data or set download credentials
-COMMAND_NAME root_output_dir=$ROOT_OUTPUT_DIR
+MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR
 ```
 
-See the [MIMIC-IV MEDS Extraction ETL](https://github.com/mmcdermott/MIMIC_IV_MEDS) for an end to end example!
 
 ## Citation
 
