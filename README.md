@@ -24,6 +24,15 @@ and machine learning-based research. (source: https://www.sicdb.com/Documentatio
 pip install SICdb_MEDS # you can do this locally or via PyPI
 # Download your data or set download credentials
 MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR
+
+# or, if you have the data already downloaded
+MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_download=False
+
+# or, if you want enable waveform extraction and processing
+MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
+```
+
+When you run this, the program will:
 ```
 
 ## Citation
