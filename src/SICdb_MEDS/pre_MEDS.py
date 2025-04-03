@@ -1,6 +1,7 @@
 """Performs pre-MEDS data wrangling for INSERT DATASET NAME HERE."""
 
 import os
+import tarfile
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -167,7 +168,29 @@ def join_and_get_pseudotime_fntr(
 
 def load_raw_file(fp: Path) -> pl.LazyFrame:
     """Loads a raw file into a Polars DataFrame."""
-    return pl.scan_csv(fp)
+    if fp.suffixes == [".tar", ".gz"]:
+        with tarfile.open(fp, "r:gz") as tar:
+            members = [m for m in tar.getmembers() if m.isfile() and m.name.endswith(".csv")]
+            if not members:
+                raise ValueError(f"No CSV files found in {fp}")
+            # Read the first CSV file found in the tar.gz archive
+            f = tar.extractfile(members[0])
+            return pl.read_csv(f)
+    else:
+        return pl.scan_csv(fp)
+
+
+# def unzip_tar_file(tar_path: Path, extract_path: Path):
+#     """
+#     Unzips a tar.gz file to the specified directory.
+#
+#     Args:
+#         tar_path (Path): The path to the tar.gz file.
+#         extract_path (Path): The directory where the contents will be extracted.
+#
+#     Returns:
+#         None
+#     """
 
 
 def main(cfg: DictConfig) -> None:
