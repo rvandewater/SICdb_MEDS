@@ -19,11 +19,14 @@ description: |-
 event_conversion_config_fp: ${oc.env:EVENT_CONVERSION_CONFIG_FP}
 
 input_dir: ${oc.env:PRE_MEDS_DIR}
-cohort_dir: ${oc.env:MEDS_COHORT_DIR}
+output_dir: ${oc.env:MEDS_COHORT_DIR}
 
 etl_metadata:
   dataset_name: ${oc.env:DATASET_NAME}
   dataset_version: ${oc.env:DATASET_VERSION}
+  pipeline_name: "extract"
+
+shards_map_fp: ${output_dir}/metadata/.shards.json
 
 stage_configs:
   shard_events:
@@ -35,7 +38,8 @@ stage_configs:
 stages:
   - shard_events
   - split_and_shard_subjects
-  - convert_to_sharded_events
+  - convert_to_subject_sharded
+  - convert_to_MEDS_events
   - merge_to_MEDS_cohort
   - extract_code_metadata
   - finalize_MEDS_metadata

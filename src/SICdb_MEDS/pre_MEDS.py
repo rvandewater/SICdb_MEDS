@@ -8,11 +8,17 @@ from pathlib import Path
 
 import polars as pl
 from loguru import logger
-from MEDS_transforms.utils import get_shard_prefix, write_lazyframe
+from MEDS_extract.shard_events.shard_events import get_shard_prefix
 from omegaconf import DictConfig, OmegaConf
 
 from SICdb_MEDS import TABLE_PROCESSOR_CFG
 from SICdb_MEDS.waveform_utils import unpack_waveform
+
+def write_lazyframe(df: pl.LazyFrame, out_fp: Path) -> None:
+    if isinstance(df, pl.LazyFrame):
+        df = df.collect()
+    out_fp.parent.mkdir(parents=True, exist_ok=True)
+    df.write_parquet(out_fp, use_pyarrow=True)
 
 ADMISSION_ID = "CaseID"
 SUBJECT_ID = "PatientID"
