@@ -3,11 +3,8 @@ raw_dataset_version: 1.0.8
 
 urls:
   dataset:
-    - EXAMPLE_OPEN_URL
     - url: https://physionet.org/content/sicdb/get-zip/${raw_dataset_version}/
       username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
       password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
-  demo:
-    - EXAMPLE_OPEN_URL
   common:
     - EXAMPLE_SHARED_URL # Often used for shared metadata files
