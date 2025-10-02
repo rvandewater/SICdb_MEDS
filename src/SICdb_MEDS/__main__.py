@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 import hydra
+import polars as pl
 from omegaconf import DictConfig
 
 from . import ETL_CFG, EVENT_CFG, HAS_PRE_MEDS, MAIN_CFG, RUNNER_CFG
@@ -77,6 +78,11 @@ def main(cfg: DictConfig):
 
     command_parts.append("'hydra.searchpath=[pkg://MEDS_transforms.configs]'")
     run_command(command_parts, cfg)
+    unique_codes = pl.scan_parquet(MEDS_cohort_dir / "data/**/*.parquet").select(pl.col("code")).unique()
+    unique_codes = unique_codes.with_columns(
+        description=pl.lit(""), parent_codes=pl.lit(None).cast(pl.List(pl.Utf8))
+    )
+    unique_codes.sink_parquet(MEDS_cohort_dir / "metadata" / "codes.parquet")
 
 
 if __name__ == "__main__":
