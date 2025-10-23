@@ -20,7 +20,9 @@ if HAS_PRE_MEDS:
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path=str(MAIN_CFG.parent), config_name=MAIN_CFG.stem)
+@hydra.main(
+    version_base=None, config_path=str(MAIN_CFG.parent), config_name=MAIN_CFG.stem
+)
 def main(cfg: DictConfig):
     """Runs the end-to-end MEDS Extraction pipeline."""
 
@@ -78,7 +80,11 @@ def main(cfg: DictConfig):
 
     command_parts.append("'hydra.searchpath=[pkg://MEDS_transforms.configs]'")
     run_command(command_parts, cfg)
-    unique_codes = pl.scan_parquet(MEDS_cohort_dir / "data/**/*.parquet").select(pl.col("code")).unique()
+    unique_codes = (
+        pl.scan_parquet(MEDS_cohort_dir / "data/**/*.parquet")
+        .select(pl.col("code"))
+        .unique()
+    )
     unique_codes = unique_codes.with_columns(
         description=pl.lit(""), parent_codes=pl.lit(None).cast(pl.List(pl.Utf8))
     )

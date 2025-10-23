@@ -75,7 +75,9 @@ def unpack_waveform_dict(df: pl.LazyFrame) -> pl.LazyFrame:
             if row["rawdata"] is None:
                 continue
             try:
-                data = bytes.fromhex(row["rawdata"][2:])  # deserialize hex string to bytes
+                data = bytes.fromhex(
+                    row["rawdata"][2:]
+                )  # deserialize hex string to bytes
             except ValueError:
                 continue
             n = row["id"]
@@ -90,8 +92,12 @@ def unpack_waveform_dict(df: pl.LazyFrame) -> pl.LazyFrame:
                 n += 1  # new primary key
                 newrow = row.copy()
                 newrow["id"] = n  # primary key
-                newrow["Val"] = struct.unpack("<f", data[i * 4 : i * 4 + 4])[0]  # bytes to float
-                newrow["Offset"] = t + timedelta(minutes=i)  # pl.duration(minutes=i) #i * 60 #new offset
+                newrow["Val"] = struct.unpack("<f", data[i * 4 : i * 4 + 4])[
+                    0
+                ]  # bytes to float
+                newrow["Offset"] = t + timedelta(
+                    minutes=i
+                )  # pl.duration(minutes=i) #i * 60 #new offset
                 # print(newrow)
                 rows.append(newrow)
             # print(rows[0])
@@ -134,7 +140,11 @@ def unpack_waveform_para(df: pl.LazyFrame) -> pl.LazyFrame:
             (pl.col("rawdata").is_not_null())
             &
             # (pl.col("rawdata").str.len_bytes() >= 3) &
-            (pl.col("rawdata").map_elements(lambda x: is_hex(x[2:]), return_dtype=pl.Boolean))
+            (
+                pl.col("rawdata").map_elements(
+                    lambda x: is_hex(x[2:]), return_dtype=pl.Boolean
+                )
+            )
         )
         index_rawdata = batch.get_column_index("rawdata")
 
@@ -142,11 +152,16 @@ def unpack_waveform_para(df: pl.LazyFrame) -> pl.LazyFrame:
         def unpack_data(row):
             try:
                 data = bytes.fromhex(row[index_rawdata][2:])
-                return tuple(struct.unpack("<f", data[i * 4 : i * 4 + 4])[0] for i in range(len(data) // 4))
+                return tuple(
+                    struct.unpack("<f", data[i * 4 : i * 4 + 4])[0]
+                    for i in range(len(data) // 4)
+                )
             except ValueError:
                 return tuple()
 
-        unpacked_data = valid_rows.map_rows(unpack_data, return_dtype=pl.List(pl.Float64))
+        unpacked_data = valid_rows.map_rows(
+            unpack_data, return_dtype=pl.List(pl.Float64)
+        )
 
         print(unpacked_data)
         # Explode the unpacked data into separate rows
@@ -155,7 +170,10 @@ def unpack_waveform_para(df: pl.LazyFrame) -> pl.LazyFrame:
         # Generate new ids and offsets
         exploded = exploded.with_columns(
             [
-                (pl.col("Offset") + pl.arange(0, pl.count(), 1) * timedelta(minutes=1)).alias("Offset"),
+                (
+                    pl.col("Offset")
+                    + pl.arange(0, pl.count(), 1) * timedelta(minutes=1)
+                ).alias("Offset"),
                 (pl.col("id") + pl.arange(1, pl.count() + 1, 1)).alias("id"),
                 pl.col("unpacked_data").alias("Val"),
             ]
@@ -163,7 +181,15 @@ def unpack_waveform_para(df: pl.LazyFrame) -> pl.LazyFrame:
 
         # Select the required columns
         result = exploded.select(
-            ["PatientID", "CaseID", "Offset", "id", "Val", "ReferenceValue", "ReferenceUnit"]
+            [
+                "PatientID",
+                "CaseID",
+                "Offset",
+                "id",
+                "Val",
+                "ReferenceValue",
+                "ReferenceUnit",
+            ]
         )
 
         return result

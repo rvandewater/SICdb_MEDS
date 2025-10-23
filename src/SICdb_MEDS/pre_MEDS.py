@@ -43,10 +43,25 @@ def get_patient_link(df: pl.LazyFrame) -> (pl.LazyFrame, pl.LazyFrame):
     age_in_days = age_in_years * 365.25
     # We assume that the patient was born at the midpoint of the year as we don't know the actual birthdate
     pseudo_date_of_birth = admission_time - pl.duration(days=age_in_days)
+
     pseudo_date_of_death = admission_time + pl.duration(seconds=pl.col("OffsetOfDeath"))
-    sex = pl.col("Sex").map_elements(
-        lambda x: "male" if x == 736 else "female" if x == 735 else str(x), return_dtype=pl.String
+    pseudo_time_of_discharge_midday = (
+        admission_time
+        + pl.duration(days=pl.col("HospitalDischargeDay"))
+        + pl.duration(hours=12)
     )
+
+    # Only set `time_of_discharge` when there is no recorded death; otherwise keep NULL
+    time_of_discharge = (
+        pl.when(pseudo_date_of_death.is_null())
+        .then(pseudo_time_of_discharge_midday)
+        .otherwise(pl.lit(None).cast(pl.Datetime("us", None)))
+    )  # We assume that the patient was discharged at midday on the day of discharge as we don't know the actual time
+    sex = pl.col("Sex").map_elements(
+        lambda x: "male" if x == 736 else "female" if x == 735 else str(x),
+        return_dtype=pl.String,
+    )
+
     return (
         df.sort(by="AdmissionYear")
         .group_by(SUBJECT_ID)
@@ -57,6 +72,7 @@ def get_patient_link(df: pl.LazyFrame) -> (pl.LazyFrame, pl.LazyFrame):
             sex.alias("Sex"),
             admission_time.alias("first_admitted_at_time"),
             pseudo_date_of_death.alias("date_of_death"),
+            time_of_discharge.alias("time_of_discharge"),
         ),
         df.select(SUBJECT_ID, ADMISSION_ID),
     )
@@ -126,13 +142,17 @@ def join_and_get_pseudotime_fntr(
             "There must be the same number of `offset_col`s and `pseudotime_col`s specified. Got "
             f"{len(offset_col)} and {len(pseudotime_col)}, respectively."
         )
-    if set(offset_col) & set(output_data_cols) or set(pseudotime_col) & set(output_data_cols):
+    if set(offset_col) & set(output_data_cols) or set(pseudotime_col) & set(
+        output_data_cols
+    ):
         raise ValueError(
             "There is an overlap between `offset_col` or `pseudotime_col` and `output_data_cols`: "
             f"{set(offset_col) & set(output_data_cols) | set(pseudotime_col) & set(output_data_cols)}"
         )
 
-    def fn(df: pl.LazyFrame, patient_df: pl.LazyFrame, references_df: pl.LazyFrame) -> pl.LazyFrame:
+    def fn(
+        df: pl.LazyFrame, patient_df: pl.LazyFrame, references_df: pl.LazyFrame
+    ) -> pl.LazyFrame:
         f"""Takes the {table_name} table and converts it to a form that includes pseudo-timestamps.
 
         The output of this process is ultimately converted to events via the `{table_name}` key in the
@@ -146,7 +166,9 @@ def join_and_get_pseudotime_fntr(
             The processed {table_name} data.
         """
         pseudotimes = [
-            (pl.col("first_admitted_at_time") + pl.duration(seconds=pl.col(offset))).alias(pseudotime)
+            (
+                pl.col("first_admitted_at_time") + pl.duration(seconds=pl.col(offset))
+            ).alias(pseudotime)
             for pseudotime, offset in zip(pseudotime_col, offset_col)
         ]
         if warning_items:
@@ -160,7 +182,9 @@ def join_and_get_pseudotime_fntr(
         # Join the patient table to the data table, INSPIRE only has subject_id as key
         joined = df.join(patient_df.lazy(), on=ADMISSION_ID, how="inner")
         if len(reference_col) > 0:
-            joined = joined.join(references_df, left_on=reference_col, right_on="ReferenceGlobalID")
+            joined = joined.join(
+                references_df, left_on=reference_col, right_on="ReferenceGlobalID"
+            )
         return joined.select(SUBJECT_ID, ADMISSION_ID, *pseudotimes, *output_data_cols)
 
     return fn
@@ -170,7 +194,9 @@ def load_raw_file(fp: Path) -> pl.LazyFrame:
     """Loads a raw file into a Polars DataFrame."""
     if fp.suffixes == [".tar", ".gz"]:
         with tarfile.open(fp, "r:gz") as tar:
-            members = [m for m in tar.getmembers() if m.isfile() and m.name.endswith(".csv")]
+            members = [
+                m for m in tar.getmembers() if m.isfile() and m.name.endswith(".csv")
+            ]
             if not members:
                 raise ValueError(f"No CSV files found in {fp}")
             # Read the first CSV file found in the tar.gz archive
@@ -218,8 +244,12 @@ def main(cfg: DictConfig) -> None:
         all_fps.extend(input_dir.rglob(f"{ext}"))
 
     for table_name, preprocessor_cfg in preprocessors.items():
-        logger.info(f"  Adding preprocessor for {table_name}:\n{OmegaConf.to_yaml(preprocessor_cfg)}")
-        functions[table_name] = join_and_get_pseudotime_fntr(table_name=table_name, **preprocessor_cfg)
+        logger.info(
+            f"  Adding preprocessor for {table_name}:\n{OmegaConf.to_yaml(preprocessor_cfg)}"
+        )
+        functions[table_name] = join_and_get_pseudotime_fntr(
+            table_name=table_name, **preprocessor_cfg
+        )
 
     # if pfx == "data_float_h":
     #     unpacked_df = unpack_waveform(processed_df)
@@ -231,7 +261,9 @@ def main(cfg: DictConfig) -> None:
     link_out_fp = MEDS_input_dir / "link_patient_to_admission.parquet"
 
     if patient_out_fp.is_file() and link_out_fp.is_file():
-        logger.info(f"Reloading processed patient df from {str(patient_out_fp.resolve())}")
+        logger.info(
+            f"Reloading processed patient df from {str(patient_out_fp.resolve())}"
+        )
         patient_df = pl.read_parquet(patient_out_fp, use_pyarrow=True)
         link_df = pl.read_parquet(link_out_fp, use_pyarrow=True)
     else:
@@ -244,11 +276,14 @@ def main(cfg: DictConfig) -> None:
         logger.info("Processing patient table...")
 
         patient_df, link_df = get_patient_link(raw_admissions_df)
+        # patient_df_collected = patient_df.collect()
         write_lazyframe(patient_df, patient_out_fp)
         write_lazyframe(link_df, link_out_fp)
 
     if references_out_fp.is_file():
-        logger.info(f"Reloading processed references df from {str(references_out_fp.resolve())}")
+        logger.info(
+            f"Reloading processed references df from {str(references_out_fp.resolve())}"
+        )
         references_df = pl.read_parquet(references_out_fp, use_pyarrow=True).lazy()
     else:
         logger.info("Processing references table first...")
@@ -265,7 +300,9 @@ def main(cfg: DictConfig) -> None:
             logger.warning(f"Skipping {pfx} as it is not supported in this pipeline.")
             continue
         elif pfx not in functions:
-            logger.warning(f"No function needed for {pfx}. For {DATASET_NAME}, THIS IS UNEXPECTED")
+            logger.warning(
+                f"No function needed for {pfx}. For {DATASET_NAME}, THIS IS UNEXPECTED"
+            )
             continue
 
         out_fp = MEDS_input_dir / f"{pfx}.parquet"
@@ -313,16 +350,24 @@ def main(cfg: DictConfig) -> None:
                 # Delete data_float_h.parquet if it exists
                 if data_float_h_path.exists():
                     os.remove(data_float_h_path)
-                    logger.info(f"Deleted {data_float_h_path} to replace with waveform data.")
+                    logger.info(
+                        f"Deleted {data_float_h_path} to replace with waveform data."
+                    )
 
                 # Rename data_float_m.parquet to data_float_h.parquet
                 if data_float_m_path.exists():
                     data_float_m_path.rename(data_float_h_path)
-                    print(f"Renamed waveform data at {data_float_m_path} to {data_float_h_path}")
+                    print(
+                        f"Renamed waveform data at {data_float_m_path} to {data_float_h_path}"
+                    )
 
             else:
                 logger.info("Skipping waveform data processing.")
-        logger.info(f"Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}")
+        logger.info(
+            f"Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}"
+        )
 
-    logger.info(f"Done! All dataframes processed and written to {str(MEDS_input_dir.resolve())}")
+    logger.info(
+        f"Done! All dataframes processed and written to {str(MEDS_input_dir.resolve())}"
+    )
     return

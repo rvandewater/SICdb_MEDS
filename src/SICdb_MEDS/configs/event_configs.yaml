@@ -8,6 +8,12 @@ patient:
     code:
       - MEDS_BIRTH
     time: col(date_of_birth)
+  admission_time: # Relative Time, The time for the first admission
+    code: ADMISSION
+    time: col(first_admitted_at_time)
+  discharge_time:
+    code: DISCHARGE
+    time: col(time_of_discharge)
 
 cases:
   sex: # M/F, Sex of the patient
@@ -30,7 +36,7 @@ cases:
     code: HEART_SURGERY_END
     time: col(HeartSurgeryEndOffset)
   readmission:
-    code: READMISSION
+    code: ADMISSION
     time: col(OffsetAfterFirstAdmission)
   ICD10Main:
     code:

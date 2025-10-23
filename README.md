@@ -33,6 +33,41 @@ MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_download=False
 MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
 ```
 
+## MEDS-transforms settings
+
+If you want to convert a large dataset, you can use parallelization with MEDS-transforms
+(the MEDS-transformation step that takes the longest).
+
+Using local parallelization with the `hydra-joblib-launcher` package, you can set the number of workers:
+
+```
+pip install hydra-joblib-launcher --upgrade
+```
+
+Then, you can set the number of workers as environment variable:
+
+```bash
+export N_WORKERS=8
+```
+
+Moreover, you can set the number of subjects per shard to balance the parallelization overhead based on how many
+subjects you have in your dataset:
+
+```bash
+export N_SUBJECTS_PER_SHARD=100000
+```
+
+## The MIMIC-IV OMOP Dataset
+
+We use the demo dataset for MIMIC-IV in the OMOP format, which is a subset of the MIMIC-IV dataset.
+This dataset downloaded from Physionet does not include the standard dictionary linking definitions but should otherwise
+be functional
+
+## Particularities
+
+- Care site is added to the visit as text
+- Add support for care_site table (visit_detail)
+
 ## Citation
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
