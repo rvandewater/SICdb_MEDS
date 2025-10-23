@@ -57,17 +57,6 @@ subjects you have in your dataset:
 export N_SUBJECTS_PER_SHARD=100000
 ```
 
-## The MIMIC-IV OMOP Dataset
-
-We use the demo dataset for MIMIC-IV in the OMOP format, which is a subset of the MIMIC-IV dataset.
-This dataset downloaded from Physionet does not include the standard dictionary linking definitions but should otherwise
-be functional
-
-## Particularities
-
-- Care site is added to the visit as text
-- Add support for care_site table (visit_detail)
-
 ## Citation
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
