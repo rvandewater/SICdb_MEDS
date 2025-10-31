@@ -52,6 +52,7 @@ laboratory:
       - LAB
       - LOINC
       - col(LOINC_code)
+      - col(ReferenceUnit)
     time: col(Offset)
     numeric_value: col(LaboratoryValue)
     text_value: col(LaboratoryType)
