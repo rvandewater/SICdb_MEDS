@@ -39,6 +39,19 @@ def by_prefix(cfg: MessyConfig) -> dict:
     return {t.input_prefix: t for t in cfg.event_tables}
 
 
+@pytest.fixture
+def dummy_credentials(monkeypatch):
+    """Satisfy the `${oc.env:...}` interpolations in the `sources:` block.
+
+    `selected_sources()` resolves interpolations for the selected bucket, so inspecting the
+    declared sources needs the credential vars to exist. The values are never used -- nothing here
+    touches the network -- but without this the test only passes on a machine that happens to have
+    real credentials exported.
+    """
+    monkeypatch.setenv("DATASET_DOWNLOAD_USERNAME", "not-a-real-user")
+    monkeypatch.setenv("DATASET_DOWNLOAD_PASSWORD", "not-a-real-password")
+
+
 def test_messy_config_parses(cfg: MessyConfig):
     """Every event table, code expression, and time cast in the config is valid dftly."""
     tables = cfg.event_tables
@@ -70,6 +83,19 @@ def test_value_columns_are_column_reads(by_prefix: dict):
 
     vital = by_prefix["data_float_h"].events[0].referenced_columns
     assert {"Val", "ReferenceValue", "ReferenceUnit"} <= vital
+
+
+def test_physionet_source_declares_unarchive(cfg: MessyConfig, dummy_credentials):
+    """Archive members are expanded by the download layer, not by ETL code.
+
+    `auto` infers the format per member and is a no-op on non-archives (`README.md`, `*.csv.gz`
+    -- gz compression is not a tar archive), so declaring it source-level is safe even though the
+    release mixes archive and non-archive members under one SHA256SUMS.
+    """
+    sources = cfg.selected_sources("dataset")
+    assert sources, "no sources declared in the `dataset` bucket"
+    for src in sources:
+        assert getattr(src, "_unarchive", None) == "auto", type(src).__name__
 
 
 def test_etl_block(cfg: MessyConfig):

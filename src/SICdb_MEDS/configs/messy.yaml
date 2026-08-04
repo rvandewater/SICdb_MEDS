@@ -18,6 +18,8 @@ sources:
       base_url: https://physionet.org/files/sicdb/${sources.dataset_version}
       username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
       password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
+      # `auto` expands any archive members in the release and is a no-op on everything else.
+      unarchive: auto
 
 etl:
   dataset_name: SICdb
