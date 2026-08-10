@@ -58,7 +58,7 @@ def get_patient_link(df: pl.LazyFrame) -> (pl.LazyFrame, pl.LazyFrame):
         .otherwise(pl.lit(None).cast(pl.Datetime("us", None)))
     )  # We assume that the patient was discharged at midday on the day of discharge as we don't know the actual time
     sex = pl.col("Sex").map_elements(
-        lambda x: "male" if x == 736 else "female" if x == 735 else str(x),
+        lambda x: "Male" if x == 735 else "Female" if x == 736 else str(x),
         return_dtype=pl.String,
     )
 
@@ -276,7 +276,7 @@ def main(cfg: DictConfig) -> None:
         logger.info("Processing patient table...")
 
         patient_df, link_df = get_patient_link(raw_admissions_df)
-        # patient_df_collected = patient_df.collect()
+        patient_df_collected = patient_df.collect()
         write_lazyframe(patient_df, patient_out_fp)
         write_lazyframe(link_df, link_out_fp)
 
