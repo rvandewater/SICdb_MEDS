@@ -13,18 +13,40 @@ from MEDS_extract.config import MessyConfig
 from SICdb_MEDS import MESSY_CFG, PIPELINE_NAME
 
 EXPECTED_TABLES = {
-    "patient": {"death_time", "age", "admission_time", "discharge_time"},
+    # There is no `patient` table in the release: the old pipeline synthesised one in pre-MEDS,
+    # and its events are re-homed onto `cases` here.
     "cases": {
-        "sex",
-        "weight",
-        "height",
+        "admission",
+        "admission_year",
+        "birth",
+        "crrt_hours",
+        "death",
+        "diagnosis",
+        "diagnosis_secondary_text",
+        "discharge",
+        "discharge_unit",
         "heart_surgery_begin",
+        "heart_surgery_cpb_time",
+        "heart_surgery_crossclamp_time",
         "heart_surgery_end",
-        "readmission",
-        "ICD10Main",
+        "height",
+        "hospital_discharge",
+        "hospital_stay_days",
+        "hospital_unit",
+        "icu_admission",
+        "referring_unit",
+        "saps3",
+        "sepsis_on_admission",
+        "sex",
+        "surgical_admission_type",
+        "surgical_site",
+        "survival_observation_window",
+        "weight",
     },
     "laboratory": {"lab"},
-    "medication": {"medication", "medication_stop"},
+    "medication": {"administration", "infusion_rate", "medication_end"},
+    "data_ref": {"baseline", "derived"},
+    "data_range": {"device_start", "device_end"},
     "data_float_h": {"vital"},
 }
 
@@ -62,7 +84,9 @@ def test_messy_config_parses(cfg: MessyConfig):
 
 def test_expected_tables_and_events(by_prefix: dict):
     """The migrated config covers exactly the tables the 0.6.x event config covered."""
-    assert {p: {e.name for e in t.events} for p, t in by_prefix.items()} == EXPECTED_TABLES
+    assert {
+        p: {e.name for e in t.events} for p, t in by_prefix.items()
+    } == EXPECTED_TABLES
 
 
 def test_subject_id_is_patient_id(cfg: MessyConfig):
@@ -79,10 +103,10 @@ def test_value_columns_are_column_reads(by_prefix: dict):
     fails silently (wrong data, no error) rather than loudly, so it is worth pinning.
     """
     lab = by_prefix["laboratory"].events[0].referenced_columns
-    assert {"LaboratoryValue", "LaboratoryType"} <= lab
+    assert {"LaboratoryValue", "LaboratoryID"} <= lab
 
     vital = by_prefix["data_float_h"].events[0].referenced_columns
-    assert {"Val", "ReferenceValue", "ReferenceUnit"} <= vital
+    assert {"Val", "DataID"} <= vital
 
 
 def test_physionet_source_declares_unarchive(cfg: MessyConfig, dummy_credentials):

@@ -1,0 +1,640 @@
+# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.7).
+#
+# This single file replaces what used to be spread across four places:
+#   - `dataset.yaml`               -> the `sources:` block below
+#   - `download.py`                -> the `sources:` block below
+#   - `configs/ETL.yaml`           -> the `etl:` block below (the stage DAG is now canonical)
+#   - `configs/event_configs.yaml` -> the event tables below, rewritten in dftly
+#
+# Run the whole ETL with:
+#   meds-extract-run spec=SICdb output_dir=$OUTPUT_DIR
+# (see README.md; `SICdb` is registered via the `MEDS_extract.pipelines` entry point).
+
+sources:
+  dataset_version: 1.0.8
+
+  dataset:
+    - type: physionet
+      base_url: https://physionet.org/files/sicdb/${sources.dataset_version}
+      username: ${oc.env:DATASET_DOWNLOAD_USERNAME}
+      password: ${oc.env:DATASET_DOWNLOAD_PASSWORD}
+      # `auto` expands any archive members in the release and is a no-op on everything else.
+      unarchive: auto
+
+etl:
+  dataset_name: SICdb
+  n_subjects_per_shard: 1000
+
+# `laboratory`, `data_ref`, `data_range` and `data_float_h` carry no PatientID of their own;
+# they pick one up from the `cases` join declared in their `_table.join` block. `medication`
+# and `cases` have the column natively.
+_defaults:
+  subject_id: $PatientID
+
+# ===========================================================================
+# THE SICdb TIMELINE, AND WHY IT LOOKS THE WAY IT DOES
+#
+# SICdb ships no timestamps at all. Every table stores an integer `Offset`, and
+# `Documentation.pdf` defines it once, for every table that has one: "Time in seconds after
+# admission" -- i.e. seconds from the MetaVision admission of that row's *case*. `cases` then
+# adds `OffsetAfterFirstAdmission`: "If a patient has more than one admission, this is the
+# offset in seconds from the first". CaseID identifies one ICU admission; PatientID identifies
+# the person and is what makes a MEDS subject (21,566 subjects over 27,350 cases; up to 12
+# cases for one patient).
+#
+# So there are exactly two hops from any raw offset to an absolute instant, and one free
+# parameter -- where to nail down the patient's first admission. This file uses:
+#
+#     _origin           2017-07-02, the midpoint of SICdb's stated 2013..2021 collection
+#                       window. Every patient's FIRST admission is placed here.
+#     _adm  (per case)  _origin + OffsetAfterFirstAdmission          [seconds]
+#     event time        _adm    + <that table's Offset>              [seconds]
+#
+# THE ABSOLUTE DATES ARE NOT REAL. Only differences within one subject carry meaning;
+# two subjects' calendars are deliberately superimposed. This mirrors INSPIRE_MEDS, and it is
+# the only anchoring MESSY can express: a per-patient anchor would need min(AdmissionYear)
+# per PatientID, and MEDS-Extract rejects a table joining to itself outright ("A self-join
+# cannot work ... Compute per-group reductions of a table's own columns in a pre-processing
+# step instead"). The real admission year is not lost -- it is emitted as its own
+# `ADMISSION_YEAR//<yyyy>` event below.
+#
+# MEASUREMENTS BEHIND THIS (all re-run against the full 1.0.8 release):
+#   * Seconds, not minutes: for the 5,787 non-first cases, min(AdmissionYear) per patient
+#     plus OffsetAfterFirstAdmission/31,557,600 lands within one year of that case's own
+#     recorded AdmissionYear for 99.97% of them. The residual is the unknown day-of-year of
+#     the first admission. At minutes it would be 60x off.
+#   * OffsetAfterFirstAdmission == 0 marks the patient's first case, exactly once, for
+#     21,563 of 21,566 patients -- and that case is the one with the lowest AdmissionYear
+#     for every one of them. (3 patients never have a 0; their first admission predates the
+#     release. They are the only subjects that end up without a MEDS_BIRTH.)
+#   * OffsetOfDeath is anchored to each case's OWN admission, so a patient's death is
+#     recorded at a *different* raw offset on each of their cases. Reduced onto this
+#     timeline -- OffsetAfterFirstAdmission + OffsetOfDeath -- all 713 patients whose death
+#     is recorded on more than one case agree to the second (spread == 0 on every one). That
+#     is what lets MEDS_DEATH be emitted per case and still collapse to one row per subject.
+#   * HeartSurgeryBeginOffset/EndOffset are from the CASE admission, NOT "from ICU admission"
+#     as the PDF's cases table says. Median begin is +1.2 h and median end +5.4 h against a
+#     median ICUOffset of +5.0 h: surgery runs up to the ICU admission, which is exactly the
+#     documented "SICdb includes preceding surgery if applicable". Read as ICU-relative, 86%
+#     of surgeries would start before the ICU admission they are supposedly measured from.
+#
+# dftly note: `Datetime + Duration` lowers to `sum_horizontal` and is not reliable, so every
+# shift below is written as the equivalent `anchor - (-$offset)::seconds`.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# NOTE ON NULL HANDLING
+#
+# A null component of an interpolated code null-propagates and the row is DROPPED, and the
+# drop is logged with its count. This file uses that deliberately, as a row filter: an
+# else-less conditional yields null, so `'"WEIGHT" if $WeightOnAdmission > 0'` emits nothing
+# for the 33 cases whose weight is the 0 placeholder.
+#
+# Note there is no `?? 'UNK'` anywhere below, unlike the sibling ETLs. Every component that
+# reaches a code here is either a raw reference id that is never null in the source, or an
+# explicitly guarded conditional -- so there is no case where a silent "UNK" bucket would be
+# preferable to either keeping the real value or dropping the row on purpose. Every drop the
+# run reports is one of the guards in this file, and the counts are stated at each one.
+#
+# dftly has no null test: `$c == $c` is the presence test (true for any present value,
+# including 0), and a bare `null` would parse as the *string* "null".
+# ---------------------------------------------------------------------------
+
+cases:
+  _table:
+    cols:
+      _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
+      # This case's admission on the subject's timeline.
+      _adm: "$_origin - (-$OffsetAfterFirstAdmission)::seconds"
+      # "Time of actual ICU admission ... the first transfer to an intensive or intermediate
+      # care ward". <= TimeOfStay on 99.8% of cases.
+      _icu: "$_adm - (-$ICUOffset)::seconds"
+      # "TimeOfStay is the time in seconds from the admission recorded by the MetaVision
+      # system to the discharge" -- the close of the case. Never null.
+      _dis: "$_adm - (-$TimeOfStay)::seconds"
+      # HospitalDischargeDay is "only available in days", so this is day-resolution; +12 h
+      # centres it in the day rather than implying midnight. It is later than the case close
+      # by a median of 6.5 days, which is the post-ICU ward stay.
+      _hospdis: "$_adm - (-($HospitalDischargeDay * 86400 + 43200))::seconds"
+      # "the elapsed time, in seconds, from admission to death"; null when death is more than
+      # a year out (81.4% of cases), which drops the event.
+      _death: "$_adm - (-$OffsetOfDeath)::seconds"
+      _surg_beg: "$_adm - (-$HeartSurgeryBeginOffset)::seconds"
+      _surg_end: "$_adm - (-$HeartSurgeryEndOffset)::seconds"
+      # AgeOnAdmission is whole years, binned to 5 and capped at 90, so the true age lies in
+      # [age, age+5). The midpoint convention ADDS half a year to the age before subtracting:
+      # subtracting less would place the subject below their own recorded age.
+      _dob: "$_origin - ($AgeOnAdmission * 365.25 + 182.625)::days"
+      # WeightOnAdmission is GRAMS (median 75,000; "Rounded to +-5kg"), not kg.
+      _weight_kg: "$WeightOnAdmission / 1000.0"
+
+  # One MEDS_BIRTH per SUBJECT, not per case. AgeOnAdmission is recorded per case and drifts
+  # across a patient's cases, so emitting it unguarded would give a 12-case patient 12
+  # different birthdays. `OffsetAfterFirstAdmission == 0` selects the first case and is
+  # provably a per-subject selector here (see the measurements above) with no join and no
+  # aggregation -- the same trick INSPIRE_MEDS uses. The 3 patients who have no zero-offset
+  # case get no birth; that is the documented cost.
+  birth:
+    code: '"MEDS_BIRTH" if $OffsetAfterFirstAdmission == 0'
+    time: $_dob
+
+  # One MEDS_DEATH per SUBJECT. This one needs no guard: every case of a dead patient that
+  # carries OffsetOfDeath resolves to the *identical* instant on this timeline (verified:
+  # zero spread across all 713 multi-case deaths), and the rows are identical in every
+  # column -- note there is deliberately no `CaseID` here -- so `merge_to_MEDS_cohort`'s
+  # default `unique_by: "*"` collapses them. Guarding on the first case instead would lose
+  # 518 of the 4,142 deaths: OffsetOfDeath is 1-year mortality, so a patient who died >1 y
+  # after their first admission but <1 y after a later one is recorded only on the later case.
+  death:
+    code: '"MEDS_DEATH"'
+    time: $_death
+
+  # Static (time: null). Sex is constant across all of a patient's cases (verified on 100% of
+  # them), so the per-case duplicates are byte-identical and collapse at merge.
+  # 735 is MALE and 736 is FEMALE per d_references -- the pre-0.7 pre_MEDS.py had these two
+  # swapped, which reported SICdb as 62% female when it is 62% male.
+  sex:
+    code: '"SEX//male" if $Sex == 735 else "SEX//female" if $Sex == 736 else "SEX//unknown"'
+    time: null
+
+  # The real calendar year of the admission, which the shared `_origin` otherwise discards.
+  admission_year:
+    code: 'f"ADMISSION_YEAR//{$AdmissionYear}"'
+    time: $_adm
+    CaseID: $CaseID
+
+  # ---- Reference-coded columns of `cases` -------------------------------------------------
+  # `cases` has ten columns whose values are d_references keys, but a table may join any
+  # given right table only ONCE, so they cannot all be decoded by a join. They therefore keep
+  # their raw reference id in the code and get their human label from a per-event `_metadata`
+  # block that keys d_references.ReferenceGlobalID onto that event's own component -- the
+  # `itemid: $omop_source_code` shape from the MEDS-Extract README. This is the same
+  # opaque-id-plus-description convention MIMIC uses for itemids, and it stays correct if a
+  # future release renumbers the vocabulary.
+  admission:
+    code: 'f"ADMISSION//{$AdmissionUrgency}"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        AdmissionUrgency: $ReferenceGlobalID
+        description: $ReferenceValue
+  referring_unit:
+    code: 'f"REFERRING_UNIT//{$ReferringUnit}"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        ReferringUnit: $ReferenceGlobalID
+        description: $ReferenceValue
+  surgical_admission_type:
+    code: 'f"SURGICAL_ADMISSION_TYPE//{$SurgicalAdmissionType}"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        SurgicalAdmissionType: $ReferenceGlobalID
+        description: $ReferenceValue
+  surgical_site:
+    code: 'f"SURGICAL_SITE//{$SurgicalSite}"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        SurgicalSite: $ReferenceGlobalID
+        description: $ReferenceValue
+  sepsis_on_admission:
+    code: 'f"SEPSIS_ON_ADMISSION//{$AdmissionFormHasSepsis}"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        AdmissionFormHasSepsis: $ReferenceGlobalID
+        description: $ReferenceValue
+  # Present on exactly the cases that carry an OffsetOfDeath (null-agreement 100%): it is the
+  # follow-up window the mortality flag was observed over, so it is the censoring horizon.
+  survival_observation_window:
+    code: 'f"SURVIVAL_OBSERVATION_WINDOW//{$EstimatedSurvivalObservationTime}"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        EstimatedSurvivalObservationTime: $ReferenceGlobalID
+        description: $ReferenceValue
+  icu_admission:
+    code: ICU_ADMISSION
+    time: $_icu
+    CaseID: $CaseID
+  # "DischargeState indicates the patient's state upon discharge from the ICU ... indicates
+  # survival on icu".
+  discharge:
+    code: 'f"DISCHARGE//{$DischargeState}"'
+    time: $_dis
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        DischargeState: $ReferenceGlobalID
+        description: $ReferenceValue
+  discharge_unit:
+    code: 'f"DISCHARGE_UNIT//{$DischargeUnit}"'
+    time: $_dis
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        DischargeUnit: $ReferenceGlobalID
+        description: $ReferenceValue
+  # "Last unit using this case".
+  hospital_unit:
+    code: 'f"HOSPITAL_UNIT//{$HospitalUnit}"'
+    time: $_dis
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        HospitalUnit: $ReferenceGlobalID
+        description: $ReferenceValue
+  # "HospitalDischargeType provides information on how the case was closed ... This field
+  # indicates survival."
+  hospital_discharge:
+    code: 'f"HOSPITAL_DISCHARGE//{$HospitalDischargeType}"'
+    time: $_hospdis
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        HospitalDischargeType: $ReferenceGlobalID
+        description: $ReferenceValue
+
+  # ---- Measurements ----------------------------------------------------------------------
+  # 33 cases carry 0 for both weight and height. 0 g / 0 cm is the missing-value placeholder,
+  # not a measurement, so the guard emits nothing rather than a false zero.
+  weight:
+    code: '"WEIGHT" if $WeightOnAdmission > 0'
+    time: $_adm
+    numeric_value: $_weight_kg
+    CaseID: $CaseID
+    _metadata:
+      _self:
+        description: '"Body weight on admission, kg (source is grams, rounded to +-5 kg)"'
+  height:
+    code: '"HEIGHT" if $HeightOnAdmission > 0'
+    time: $_adm
+    numeric_value: $HeightOnAdmission
+    CaseID: $CaseID
+    _metadata:
+      _self:
+        description: '"Body height on admission, cm (rounded to +-5 cm)"'
+  # SAPS III is scored on the first hour of ICU care, so it belongs at the ICU admission, not
+  # at the case admission that may precede it by a surgery. 2 cases score 0, which is below
+  # the floor of the instrument and is a missing marker.
+  saps3:
+    code: '"SAPS3" if $saps3 > 0'
+    time: $_icu
+    numeric_value: $saps3
+    CaseID: $CaseID
+  # A whole-stay total, so it is only known at the case close. 0 means no CRRT was given.
+  crrt_hours:
+    code: '"CRRT_HOURS" if $HoursOfCRRT > 0'
+    time: $_dis
+    numeric_value: $HoursOfCRRT
+    CaseID: $CaseID
+  # 25 cases have a discharge day but no stay length; without the guard those would emit a
+  # HOSPITAL_STAY_DAYS event carrying a null numeric_value, which is a measurement that was
+  # never taken. (The other 109 nulls are already dropped by the null `_hospdis`.)
+  hospital_stay_days:
+    code: '"HOSPITAL_STAY_DAYS" if $HospitalStayDays == $HospitalStayDays'
+    time: $_hospdis
+    numeric_value: $HospitalStayDays
+    CaseID: $CaseID
+
+  # ---- Diagnosis -------------------------------------------------------------------------
+  # Placed at the case close, not at admission: ICD10Main is the case's coded main diagnosis,
+  # which is only settled administratively at discharge. Dating it to admission would leak the
+  # outcome into every prediction window. (MIMIC_IV_MEDS dates diagnoses to `dischtime` for
+  # the same reason.)
+  #
+  # SICdb's ICD-10 is the German modification ICD-10-GM and it already arrives dotted
+  # ("R96.0", "S62.60"), so `parent_codes` needs none of the dot-insertion MIMIC's ICD-9/10-CM
+  # block does. 15 of the 2,168 distinct values are not canonical -- ICD-10-GM `.x` extension
+  # codes (C19.x1, T68.x9) plus a handful of typos with a leading digit ("103.2") -- so the
+  # parent is guarded by a full-match regex and simply omitted for those.
+  diagnosis:
+    code: 'f"DIAGNOSIS//ICD10GM//{$ICD10Main}"'
+    time: $_dis
+    CaseID: $CaseID
+    #
+    # EXPECTED WARNING: `extract_code_metadata` logs one "_self metadata ... extra rows for an
+    # already-seen code" for this block. 16 of the 2,168 distinct ICD-10-GM codes carry two
+    # German wordings across the 2013-2021 window because ICD-10-GM itself was re-worded
+    # (E11.9 is both "Nicht primär insulinabhängiger Diabetes mellitus [Typ-2-Diabetes]: Ohne
+    # Komplikationen" and "Diabetes mellitus, Typ 2: Ohne Komplikationen"). The reducer joins
+    # both wordings with a newline, which is the right outcome; the alternative -- moving the
+    # text to `text_value` -- would silence the warning but repeat 27k German strings through
+    # the data and leave codes.parquet with no diagnosis descriptions at all.
+    _metadata:
+      _self:
+        description: $ICD10MainText
+        parent_codes: 'f"ICD10GM/{$ICD10Main}" if /^[A-Z][0-9]{2}(\.[0-9]{1,2})?$/ in $ICD10Main'
+  # A free-text secondary diagnosis with no code of its own; it varies row to row, so it is a
+  # text_value rather than code metadata. `$c == $c` is dftly's presence test (dftly has no
+  # null test); without it the 3,619 cases that have no second diagnosis would each emit an
+  # empty DIAGNOSIS_SECONDARY_TEXT.
+  diagnosis_secondary_text:
+    code: '"DIAGNOSIS_SECONDARY_TEXT" if $DiagnosisT2 == $DiagnosisT2'
+    time: $_dis
+    text_value: $DiagnosisT2
+    CaseID: $CaseID
+
+  # ---- Cardiac surgery (8.6% of cases) ----------------------------------------------------
+  heart_surgery_begin:
+    code: HEART_SURGERY_BEGIN
+    time: $_surg_beg
+    CaseID: $CaseID
+  heart_surgery_end:
+    code: HEART_SURGERY_END
+    time: $_surg_end
+    CaseID: $CaseID
+  # Both are durations in MINUTES, recorded against the operation, so they are stamped at its
+  # end. They are non-null on exactly the cardiac-surgery cases.
+  heart_surgery_cpb_time:
+    code: HEART_SURGERY_CPB_MINUTES
+    time: $_surg_end
+    numeric_value: $HeartSurgeryCPBTime
+    CaseID: $CaseID
+  heart_surgery_crossclamp_time:
+    code: HEART_SURGERY_CROSSCLAMP_MINUTES
+    time: $_surg_end
+    numeric_value: $HeartSurgeryCrossClampTime
+    CaseID: $CaseID
+
+# ===========================================================================
+# laboratory -- 17.9M rows, the largest table that ships complete in 1.0.8.
+#
+# The table has no PatientID column in this release (the PDF claims one; the CSV header is
+# id,CaseID,LaboratoryID,Offset,LaboratoryValue,LaboratoryType), so `cases` supplies both the
+# subject and the timeline anchor. 100% of rows join.
+#
+# The 0.6.x config read $LOINC_code / $ReferenceUnit / $ReferenceName here while declaring no
+# join at all, so those three columns did not exist and the stage could only fail.
+# ===========================================================================
+laboratory:
+  _table:
+    # A table may declare exactly ONE join, and it has to be `cases`: the subject id and the
+    # timeline anchor cannot come from anywhere else. The analyte dictionary therefore arrives
+    # through `_metadata` instead, which needs no join -- so the code carries the raw
+    # LaboratoryID and `metadata/codes.parquet` carries the name, unit and LOINC. This is the
+    # same convention MIMIC_IV_MEDS uses for `LAB//<itemid>`.
+    join:
+      cases:
+        key: CaseID
+        cols: [PatientID, OffsetAfterFirstAdmission]
+    cols:
+      _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
+      # Both hops at once. 2.3% of offsets are negative -- the documented pre-admission labs
+      # -- and 11% land after the case closes, because SICdb also returns results belonging to
+      # the same patient's neighbouring stays. Both are real and are kept.
+      _t: "$_origin - (-($OffsetAfterFirstAdmission + $Offset))::seconds"
+      # LaboratoryType is "used for special laboratory types, i.e. arterial blood gas". Across
+      # all 17.9M rows it takes exactly one non-null value, 2296 = "Arterial" (10.8M rows).
+      # 28 of the 427 analytes are measured both ways -- the blood-gas panel: a BGA potassium
+      # is a different measurement from a central-lab potassium, with a different reference
+      # range -- so the specimen belongs in the code. It costs 28 extra codes (455 rather than
+      # 427); 398 analytes are never arterial and 1 always is.
+      _specimen: '"ARTERIAL" if $LaboratoryType == 2296 else "UNSPEC"'
+  lab:
+    code: 'f"LAB//{$LaboratoryID}//{$_specimen}"'
+    time: $_t
+    numeric_value: $LaboratoryValue
+    # A partial match: the block produces only the `LaboratoryID` component, so both specimen
+    # variants of an analyte inherit one dictionary row.
+    #
+    # 403 of the 427 analytes carry a LOINC_code, but 10 of those are local Salzburg
+    # identifiers wearing the column's name -- ZL-315, ZL-3188, V00055, V00578-7,
+    # #NOCDAEXPORT#. Publishing them as `LOINC/...` parents would be a fabricated ontology
+    # link, so only the 393 that full-match the canonical <digits>-<check digit> shape pass.
+    # Those 393 resolve to 371 distinct LOINC concepts (22 LOINCs are each shared by two
+    # SICdb analytes), and they land on 419 of the 455 emitted LAB codes.
+    _metadata:
+      d_references:
+        LaboratoryID: $ReferenceGlobalID
+        description: $ReferenceValue
+        unit: $ReferenceUnit
+        loinc_long: $LOINC_long
+        parent_codes: 'f"LOINC/{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code'
+
+# ===========================================================================
+# medication -- 5.1M rows. Carries its own PatientID (100% consistent with cases), so the
+# `cases` join pulls only the anchor; asking for PatientID as well would collide with the
+# column already on the left.
+# ===========================================================================
+medication:
+  _table:
+    # As in `laboratory`: the one available join goes to `cases` for the anchor, and the drug
+    # dictionary is attached as metadata. medication does carry its own PatientID (verified
+    # 100% consistent with cases), so the join must NOT also request it -- the column is
+    # already on the left.
+    join:
+      cases:
+        key: CaseID
+        cols: [OffsetAfterFirstAdmission]
+    cols:
+      _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
+      _t: "$_origin - (-($OffsetAfterFirstAdmission + $Offset))::seconds"
+      _tend: "$_origin - (-($OffsetAfterFirstAdmission + $OffsetDrugEnd))::seconds"
+  # 0.23% of rows record Amount == 0, i.e. an order that delivered nothing; those emit no
+  # administration event. d_references splits the 710 DrugIDs into Drug (561), Fluid (137),
+  # Food (9) and FoodKcal (3) -- that split rides along as the `category` metadata column so a
+  # fluid bolus is still distinguishable from a drug dose.
+  administration:
+    code: 'f"MEDICATION//{$DrugID}" if $Amount > 0'
+    time: $_t
+    numeric_value: $Amount
+    CaseID: $CaseID
+    IsSingleDose: $IsSingleDose
+    _metadata:
+      d_references:
+        DrugID: $ReferenceGlobalID
+        description: $ReferenceValue
+        unit: $ReferenceUnit
+        category: $ReferenceName
+  medication_end:
+    code: 'f"MEDICATION_END//{$DrugID}" if $Amount > 0'
+    time: $_tend
+    CaseID: $CaseID
+    EventID: $id
+    _metadata:
+      d_references:
+        DrugID: $ReferenceGlobalID
+        description: $ReferenceValue
+        unit: $ReferenceUnit
+        category: $ReferenceName
+  # Rate is only meaningful for the 45% of rows that are continuous: "Metavision does not
+  # differ between continuous or single doses ... a single dose is set to 60 second admission
+  # time", which makes AmountPerMinute a restatement of Amount on a bolus.
+  infusion_rate:
+    code: 'f"MEDICATION_RATE//{$DrugID}" if $IsSingleDose == 0 and $AmountPerMinute > 0'
+    time: $_t
+    numeric_value: $AmountPerMinute
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        DrugID: $ReferenceGlobalID
+        description: $ReferenceValue
+        unit: $ReferenceUnit
+        category: $ReferenceName
+
+# ===========================================================================
+# data_ref -- 381k rows, "preprocessed-for-convenience and preprocessed-for-anonymization
+# elements": comorbidities, premedications, cardiac interventions, NYHA class and KDIGO AKI
+# stage. Worth extracting: 18 clean fields, 97.7% of rows join to a real case (8,686 rows
+# carry a CaseID that is not in `cases` -- one of them is a unix timestamp -- and drop out).
+#
+# It needs TWO d_references lookups (FieldID -> which field, RefID -> its value) and only one
+# join is available, so the field NAME is joined (it is the part that must not drift) and the
+# 11 distinct RefIDs the table actually uses are decoded inline. A RefID outside that
+# enumerated set yields a null code and drops the row loudly, which is the failure mode to
+# want. The alternative -- keeping the raw RefID in the code and labelling it via `_metadata`
+# -- needs no enumeration but produces codes like `PreconditionDiabetes//740`.
+# ===========================================================================
+data_ref:
+  _table:
+    join:
+      cases:
+        key: CaseID
+        cols: [PatientID, OffsetAfterFirstAdmission, TimeOfStay]
+    cols:
+      _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
+      _adm: "$_origin - (-$OffsetAfterFirstAdmission)::seconds"
+      _dis: "$_adm - (-$TimeOfStay)::seconds"
+      # 738/740 are the YesNoUnknown pair; 3115..3118 are KDIGO AKI stages 0..3; 2323/2324/
+      # 2328/2327 are NYHA I..IV. Rendered as their d_references ReferenceValue text. These
+      # eleven are every RefID the table uses; the field id always prefixes the code, so the
+      # bare "1" of NYHA and of KDIGO never collide. A twelfth value would yield a null code
+      # and drop its row with a logged count, which is the failure mode to want.
+      _val: >-
+        "No" if $RefID == 738 else "Yes" if $RefID == 740
+        else "0" if $RefID == 3115 else "1" if $RefID == 3116
+        else "2" if $RefID == 3117 else "3" if $RefID == 3118
+        else "1" if $RefID == 2323 else "2" if $RefID == 2324
+        else "3" if $RefID == 2328 else "4" if $RefID == 2327
+      # The eight Precondition*/Premedication* fields plus NYHA (3111) -- exactly the set the
+      # PDF's "Preprocessed fields" table sources from the admission protocol. FieldID 3096
+      # (HeartSurgeryType) is excluded from both events: all 27,350 of its rows point at RefID
+      # 2017, whose ReferenceValue is the literal UI placeholder "Add a new one". It carries no
+      # information, and RefID 2017 occurs nowhere else.
+      _bucket: >-
+        "BASELINE" if $FieldID == 3097 or $FieldID == 3098 or $FieldID == 3103
+        or $FieldID == 3104 or $FieldID == 3105 or $FieldID == 3106
+        or $FieldID == 3107 or $FieldID == 3108 or $FieldID == 3111
+        else "DROP" if $FieldID == 3096
+        else "DERIVED"
+  # Known before the ICU course starts, so dated to the admission and usable as a covariate.
+  baseline:
+    code: 'f"CASE_ATTR//{$FieldID}//{$_val}" if $_bucket == "BASELINE"'
+    time: $_adm
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        FieldID: $ReferenceGlobalID
+        description: $ReferenceValue
+  # Everything else is derived from the stay itself -- the interventions performed, whether
+  # SARS-CoV-2 pneumonia was present, and the 168-hour KDIGO AKI stage. Dating these to the
+  # admission would leak an outcome, so they are stamped at the case close.
+  derived:
+    code: 'f"CASE_ATTR//{$FieldID}//{$_val}" if $_bucket == "DERIVED"'
+    time: $_dis
+    CaseID: $CaseID
+    _metadata:
+      d_references:
+        FieldID: $ReferenceGlobalID
+        description: $ReferenceValue
+
+# ===========================================================================
+# data_range -- 183k rows of invasive devices with a real start and end: arterial, central and
+# peripheral lines, drains, urinary catheters, airways, feeding tubes. Worth extracting, and
+# the cleanest auxiliary table in the release: 99.96% of rows join to a case, 99.4% of start
+# offsets fall inside [admission - 1 d, discharge + 1 d], and OffsetEnd >= Offset on 99.9%.
+# 15 DataIDs, all resolvable through the single d_references join.
+#
+# The `Data` column is skipped: the PDF says it is "currently null", and it is null on all
+# 183,339 rows.
+# ===========================================================================
+data_range:
+  _table:
+    join:
+      cases:
+        key: CaseID
+        cols: [PatientID, OffsetAfterFirstAdmission]
+    cols:
+      _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
+      _t: "$_origin - (-($OffsetAfterFirstAdmission + $Offset))::seconds"
+      _tend: "$_origin - (-($OffsetAfterFirstAdmission + $OffsetEnd))::seconds"
+  device_start:
+    code: 'f"DEVICE//{$DataID}//START"'
+    time: $_t
+    CaseID: $CaseID
+    EventID: $id
+    _metadata:
+      d_references:
+        DataID: $ReferenceGlobalID
+        description: $ReferenceValue
+        category: $ReferenceName
+  device_end:
+    code: 'f"DEVICE//{$DataID}//END"'
+    time: $_tend
+    CaseID: $CaseID
+    EventID: $id
+    _metadata:
+      d_references:
+        DataID: $ReferenceGlobalID
+        description: $ReferenceValue
+        category: $ReferenceName
+
+# ===========================================================================
+# data_float_h -- the hourly-aggregated monitor signal table (73 SignalFloat parameters:
+# arterial and non-invasive pressures, heart rate, SpO2, ventilator settings, temperatures).
+# `Val` is the hourly aggregate and `cnt` the number of minute samples behind it.
+#
+# The `rawdata` blob is deliberately not read here. It is a hex-encoded stream of 60 IEEE-754
+# floats per row -- the minute-resolution signal -- and unpacking it is a binary decode that
+# no dftly expression can do; SICdb_MEDS.waveform_utils exists for that and stays a separate,
+# opt-in pass.
+# ===========================================================================
+data_float_h:
+  _table:
+    join:
+      cases:
+        key: CaseID
+        cols: [PatientID, OffsetAfterFirstAdmission]
+    cols:
+      _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
+      _t: "$_origin - (-($OffsetAfterFirstAdmission + $Offset))::seconds"
+  # No LOINC parent here: none of the 73 SignalFloat references carries a LOINC_code.
+  vital:
+    code: 'f"VITAL//{$DataID}"'
+    time: $_t
+    numeric_value: $Val
+    CaseID: $CaseID
+    # The minute-sample count behind the hourly aggregate; an extra column rather than a
+    # second event, and never `numeric_value`, which belongs to the measurement itself.
+    n_samples: $cnt
+    _metadata:
+      d_references:
+        DataID: $ReferenceGlobalID
+        description: $ReferenceValue
+        unit: $ReferenceUnit
+
+# ===========================================================================
+# unitlog -- NOT EXTRACTED, on the evidence.
+#
+# It is the only table in the release that fails its own joins. Of its 139,968 rows:
+#   * 18.1% (25,297) carry a CaseID that does not exist in `cases`;
+#   * 23.1% carry a HospitalUnit that is not a d_references HospitalUnit key (raw 6..14 are
+#     unmapped integers), so a joined ward name would be null for nearly a quarter of rows;
+#   * of the rows that do join, only 61.5% have an Offset inside [0, TimeOfStay] -- the max is
+#     +120,217,260 s, 3.8 years after the admission it is supposedly measured from;
+#   * LogState, the only column that could disambiguate a transfer direction, is the constant
+#     0 on every row, and the PDF itself notes it "is a raw unencoded value".
+# The documentation's own warning -- "in many cases Metavision creates multiple entries and
+# this data is difficult to interpret" -- matches what the data shows. Ward-transfer events
+# built from it would be wrong more often than not; `DISCHARGE_UNIT`, `HOSPITAL_UNIT` and
+# `REFERRING_UNIT` from `cases` already carry the reliable part of the same information.
+# ===========================================================================

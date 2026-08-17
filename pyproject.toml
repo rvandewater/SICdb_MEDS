@@ -8,21 +8,20 @@ dynamic = ["version"]
 authors = [
   { name="Robin van de Water", email="robin.vandewater@hpi.de" },
 ]
-description = "A template ETL pipeline to extract arbitrary data into the MEDS format."
+description = "An ETL pipeline to extract the Salzburg Intensive Care database (SICdb) into the MEDS format."
 readme = "README.md"
-requires-python = ">=3.11"
+# Mirrors MEDS-Extract 0.7 own floor and ceiling. A looser range admits interpreters it cannot
+# be installed on, and uv then refuses to resolve at all.
+requires-python = ">=3.11.4,<3.14"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-  "MEDS-extract[download]>=0.7.0,<0.8",
-  "MEDS-transforms>=0.6.7,<0.7",
-  "hydra-core",
-  "loguru",
-  "polars>=1.26",
-]
+# Pure-config ETL: MEDS-Extract supplies both CLIs and every extraction stage, and fences the
+# MEDS-transforms / polars / hydra versions itself. Pinning those here only creates drift -- the
+# stale `MEDS-transforms>=0.6.7,<0.7` made the project unresolvable against meds-extract 0.7.
+dependencies = ["MEDS-extract[download]>=0.7.0,<0.8"]
 
 [tool.setuptools_scm]
 
@@ -32,19 +31,11 @@ tests = ["pytest", "pytest-cov"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
-[project.scripts]
-MEDS_extract-SICdb= "SICdb_MEDS.__main__:main"
-
 # Registers the bundled MESSY file as a MEDS-Extract dataset pipeline, so the whole
 # ETL is runnable as `meds-extract-run spec=SICdb output_dir=...`.
 [project.entry-points."MEDS_extract.pipelines"]
-SICdb = "SICdb_MEDS.configs:messy.yaml"
+SICdb = "SICdb_MEDS:messy.yaml"
 
 [project.urls]
 Homepage = "https://github.com/rvandewater/SICdb_MEDS"
 Issues = "https://github.com/rvandewater/SICdb_MEDS/issues"
-
-[tool.pytest.ini_options]
-# `--doctest-modules` is scoped to the modules CI passes on the command line. The doctests in
-# `utils.py` / `unpack.py` are the API-level tests for those helpers.
-doctest_optionflags = ["NORMALIZE_WHITESPACE", "ELLIPSIS"]

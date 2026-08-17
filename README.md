@@ -35,7 +35,7 @@ MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
 
 ## Configuration
 
-The entire ETL is described by one file, `src/SICdb_MEDS/configs/messy.yaml` — a
+The entire ETL is described by one file, `src/SICdb_MEDS/messy.yaml` — a
 [MESSY](https://github.com/mmcdermott/MEDS_extract) config carrying three sections:
 
 - **`sources:`** — where the raw data lives. `meds-extract-download` stages it, with SHA-256
