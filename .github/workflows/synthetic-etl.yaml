@@ -1,4 +1,4 @@
-name: Synthetic ETL
+name: Synthetic ETL for MESSY files using MESSY_synth
 
 on:
   push:
