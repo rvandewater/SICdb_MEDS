@@ -22,16 +22,18 @@ and machine learning-based research. (source: https://www.sicdb.com/Documentatio
 ## Usage
 
 ```bash
-pip install SICdb_MEDS # you can do this locally or via PyPI
-# Download your data or set download credentials
-MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR
+pip install SICdb_MEDS
+export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
+export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 
-# or, if you have the data already downloaded
-MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_download=False
+meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR
 
-# or, if you want enable waveform extraction and processing (takes significantly longer and up to 100GB of RAM)
-MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
+# or, if the release is already on disk
+meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR do_download=false input_dir=$RAW_INPUT_DIR
 ```
+
+Waveform extraction is not currently supported; see
+[#1](https://github.com/rvandewater/SICdb_MEDS/issues/1).
 
 ## Configuration
 
@@ -55,9 +57,9 @@ meds-extract-download spec=SICdb output_dir=$RAW_INPUT_DIR
 meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR download_key=null input_dir=$PRE_MEDS_DIR
 ```
 
-The `MEDS_extract-SICdb` wrapper still exists because SICdb needs a pre-MEDS step that MESSY
-cannot yet express: unzipping the PhysioNet archive, resolving relative offsets into absolute
-timestamps, and optionally unpacking the high-resolution waveform tables.
+There is no wrapper CLI and no pre-MEDS step. Both are gone: the archive is unpacked by the
+download layer, and offsets are resolved to absolute pseudo-timestamps in `_table.cols`. The
+package ships no Python at all -- the whole ETL is `src/SICdb_MEDS/messy.yaml`.
 
 ## MEDS-transforms settings
 

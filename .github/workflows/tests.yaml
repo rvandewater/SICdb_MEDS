@@ -37,14 +37,6 @@ jobs:
         run: |
           pytest src/ tests/ -v --cov=src --junitxml=junit.xml -s
 
-      # Doctests for the helper modules. Scoped to these files rather than all of `src/`, which is
-      # what the step above used to do: `pre_MEDS.py` carries a long-broken doctest (it reads
-      # `tests/operations_synthetic.csv`, a fixture this repo does not have -- it was copied from
-      # the template), so the unscoped run has been failing. Fixing that is out of scope here.
-      - name: Run doctests
-        run: |
-          pytest --doctest-modules src/SICdb_MEDS/utils.py -v
-
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
