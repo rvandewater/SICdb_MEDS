@@ -1,0 +1,28 @@
+name: Synthetic ETL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, "release/*", "dev"]
+
+jobs:
+  synthetic-etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install SICdb_MEDS
+        run: uv sync --locked
+
+      - name: Generate and extract synthetic data
+        run: |
+          uv pip install https://github.com/rvandewater/MESSY_synth.git
+          uv run MESSY_synth ./src/SICdb_MEDS/messy.yaml -o raw_synthetic/ --explain
+          uv run meds-extract-run spec=SICdb output_dir=./sicdb_meds_synth input_dir=raw_synthetic do_download=False
