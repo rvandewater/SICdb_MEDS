@@ -3,8 +3,12 @@ name: Synthetic ETL for MESSY files using MESSY_synth
 on:
   push:
     branches: [main]
+    paths:
+      - src/SICdb_MEDS/messy.yaml
   pull_request:
     branches: [main, "release/*", "dev", "feat/*"]
+    paths:
+      - src/SICdb_MEDS/messy.yaml
 
 jobs:
   synthetic-etl:

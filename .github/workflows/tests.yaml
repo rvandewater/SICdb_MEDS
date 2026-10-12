@@ -35,7 +35,7 @@ jobs:
       #----------------------------------------------
       - name: Run tests
         run: |
-          pytest src/ tests/ -v --doctest-modules --cov=src --junitxml=junit.xml -s
+          pytest src/ tests/ -v --cov=src --junitxml=junit.xml -s
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4.0.1

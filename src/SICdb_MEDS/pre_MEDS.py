@@ -276,7 +276,6 @@ def main(cfg: DictConfig) -> None:
         logger.info("Processing patient table...")
 
         patient_df, link_df = get_patient_link(raw_admissions_df)
-        patient_df_collected = patient_df.collect()
         write_lazyframe(patient_df, patient_out_fp)
         write_lazyframe(link_df, link_out_fp)
 
