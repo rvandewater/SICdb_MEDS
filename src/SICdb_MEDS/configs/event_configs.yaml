@@ -21,6 +21,9 @@ cases:
       - SEX
       - col(Sex)
     time: null
+    _metadata:
+      reference_metadata:
+        description: sex_description
   weight:
     code: WEIGHT
     numeric_value: col(WeightOnAdmission)
@@ -45,6 +48,10 @@ cases:
       - col(ICD10Main)
     text_value: col(ICD10MainText)
     time: null
+    _metadata: # Tables written by pre-MEDS, see code_metadata.py and the README section "Code metadata".
+      diagnosis_metadata:
+        description: description
+        parent_codes: parent_codes
 
 laboratory:
   lab:
@@ -56,6 +63,10 @@ laboratory:
     time: col(Offset)
     numeric_value: col(LaboratoryValue)
     text_value: col(LaboratoryType)
+    _metadata:
+      laboratory_metadata:
+        description: description
+        parent_codes: parent_codes
 
 medication:
   medication:
@@ -65,6 +76,9 @@ medication:
     time: col(Offset)
     numeric_value: col(Amount)
     text_value: col(AmountPerMinute)
+    _metadata:
+      reference_metadata:
+        description: medication_description
   medication_stop:
     code:
       - MEDICATION_END
@@ -74,6 +88,9 @@ medication:
     time: col(OffsetDrugEnd)
     numeric_value: col(Amount)
     text_value: col(AmountPerMinute)
+    _metadata:
+      reference_metadata:
+        description: medication_end_description
 
 data_float_h:
   vital:
@@ -84,6 +101,9 @@ data_float_h:
     time: col(Offset)
     numeric_value: col(Val)
     text_value: col(ReferenceValue)
+    _metadata:
+      reference_metadata:
+        description: vital_description
 #data_float_m:
 #  vital:
 #    code:

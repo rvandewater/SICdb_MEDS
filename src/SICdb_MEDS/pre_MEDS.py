@@ -12,6 +12,7 @@ from MEDS_transforms.utils import get_shard_prefix, write_lazyframe
 from omegaconf import DictConfig, OmegaConf
 
 from SICdb_MEDS import TABLE_PROCESSOR_CFG
+from SICdb_MEDS.code_metadata import write_metadata_tables
 from SICdb_MEDS.waveform_utils import unpack_waveform
 
 ADMISSION_ID = "CaseID"
@@ -365,6 +366,8 @@ def main(cfg: DictConfig) -> None:
         logger.info(
             f"Processed and wrote to {str(out_fp.resolve())} in {datetime.now() - st}"
         )
+
+    write_metadata_tables(MEDS_input_dir, references_df)
 
     logger.info(
         f"Done! All dataframes processed and written to {str(MEDS_input_dir.resolve())}"

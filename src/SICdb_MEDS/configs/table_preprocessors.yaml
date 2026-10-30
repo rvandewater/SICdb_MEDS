@@ -90,6 +90,7 @@ laboratory:
     - "LOINC_code"
     - "LOINC_long"
     - "ReferenceUnit"
+    - "ReferenceValue" # analyte name, for the laboratory code metadata (code_metadata.py)
 
 #data_ref:
 #  offset_col: "Offset"
