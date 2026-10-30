@@ -1,4 +1,4 @@
-"""Code metadata (``description``, ``parent_codes``) for ``metadata/codes.parquet``.
+"""Code metadata (``description``) for ``metadata/codes.parquet``.
 
 Two routes, matching how MEDS-Transforms 0.2.x attaches metadata (see the README section "Code
 metadata"):
@@ -12,10 +12,12 @@ metadata"):
   component to join on, so ``metadata/static_code_descriptions.csv`` (with the source of every row) is
   filled in after the pipeline by :func:`finalize_code_metadata`, which also writes every code of the
   data into ``codes.parquet`` with the MEDS code-metadata schema.
+
+Vocabulary parents (``ICD10//...``, ``LOINC//...``) are not added here: suMEDS adds them from the
+packaged rules file ``sumeds_rules.yaml`` (README section "Enriching code metadata with suMEDS").
 """
 
 import os
-import re
 from pathlib import Path
 
 import polars as pl
@@ -31,34 +33,9 @@ DIAGNOSIS_METADATA = "diagnosis_metadata"
 LABORATORY_METADATA = "laboratory_metadata"
 REFERENCE_METADATA = "reference_metadata"
 
-# An ICD-10 three-character category or four-character subcategory, optionally followed by a fifth
-# character, which subdivides the four-character subcategory in national modifications.
-ICD10_PARENT_RE = r"^([A-Z][0-9]{2}(?:\.[0-9])?)[0-9]?$"
-LOINC_RE = re.compile(r"^(\d{1,5})-(\d)$")
 DESCRIPTION_SEPARATOR = (
     "\n"  # The `description_separator` MEDS-Transforms uses for duplicate descriptions.
 )
-
-
-def is_loinc_code(code: str | None) -> bool:
-    """Whether ``code`` is a well-formed LOINC code: up to five digits, a hyphen, and the mod-10 check digit.
-
-    Examples:
-        >>> is_loinc_code("2160-0"), is_loinc_code("718-7")
-        (True, True)
-        >>> is_loinc_code("2160-1"), is_loinc_code("ZL-123"), is_loinc_code(None)
-        (False, False, False)
-    """
-    match = LOINC_RE.match(code or "")
-    if not match:
-        return False
-    total = 0
-    for i, digit in enumerate(int(c) for c in reversed(match.group(1))):
-        if i % 2 == 0:
-            digit *= 2
-            digit = digit - 9 if digit > 9 else digit
-        total += digit
-    return (10 - total % 10) % 10 == int(match.group(2))
 
 
 def _with_unit(name: pl.Expr, unit: pl.Expr, what: pl.Expr) -> pl.Expr:
@@ -71,11 +48,10 @@ def _with_unit(name: pl.Expr, unit: pl.Expr, what: pl.Expr) -> pl.Expr:
 
 
 def diagnosis_metadata(cases: pl.LazyFrame) -> pl.LazyFrame:
-    """One row per ``ICD10Main``: SICdb's own ``ICD10MainText`` and an ``ICD10/`` parent code.
+    """One row per ``ICD10Main``: SICdb's own ``ICD10MainText``.
 
-    The parent is the code itself, or, for a five-character code, its four-character subcategory, in the
-    OMOP ``ICD10`` (WHO) vocabulary; codes of any other shape get no parent. A code recorded with more
-    than one text gets all of them, sorted and joined as MEDS-Transforms joins duplicate descriptions.
+    A code recorded with more than one text gets all of them, sorted and joined as MEDS-Transforms joins
+    duplicate descriptions. ICD-10 parents are added by suMEDS, not here.
 
     Examples:
         >>> cases = pl.LazyFrame({
@@ -83,10 +59,9 @@ def diagnosis_metadata(cases: pl.LazyFrame) -> pl.LazyFrame:
         ...     "ICD10MainText": ["hypertension", "finger fracture", "diabetes b", "diabetes a", "x", "y"],
         ... })
         >>> diagnosis_metadata(cases).collect().rows()  # doctest: +NORMALIZE_WHITESPACE
-        [('E11.9', 'diabetes a\\ndiabetes b', ['ICD10/E11.9']), ('I10', 'hypertension', ['ICD10/I10']),
-         ('S62.60', 'finger fracture', ['ICD10/S62.6']), ('X1.x', 'x', None)]
+        [('E11.9', 'diabetes a\\ndiabetes b'), ('I10', 'hypertension'), ('S62.60', 'finger fracture'),
+         ('X1.x', 'x')]
     """
-    parent = pl.col("ICD10Main").str.extract(ICD10_PARENT_RE, 1)
     return (
         cases.select(
             pl.col("ICD10Main").cast(pl.String), pl.col("ICD10MainText").cast(pl.String)
@@ -98,9 +73,6 @@ def diagnosis_metadata(cases: pl.LazyFrame) -> pl.LazyFrame:
             description=pl.when(pl.col("description").list.len() > 0).then(
                 pl.col("description").list.join(DESCRIPTION_SEPARATOR)
             ),
-            parent_codes=pl.when(parent.is_not_null()).then(
-                pl.concat_list(pl.lit("ICD10/") + parent)
-            ),
         )
         .sort("ICD10Main")
     )
@@ -111,8 +83,8 @@ def laboratory_metadata(laboratory: pl.LazyFrame) -> pl.LazyFrame:
 
     Built from the pre-MEDS laboratory table, so only analytes that occur in it contribute. The
     description is the analyte's ``d_references.ReferenceValue`` and unit; analytes that share a code
-    (same LOINC code and unit, or no LOINC code) are all listed. ``LOINC_code`` becomes a ``LOINC/``
-    parent only when it is a well-formed LOINC code (see :func:`is_loinc_code`).
+    (same LOINC code and unit, or no LOINC code) are all listed. The ``LOINC_code`` is SICdb's own and
+    stays in the code; suMEDS validates it against LOINC and adds the ``LOINC//`` parent.
 
     Examples:
         >>> lab = pl.LazyFrame({
@@ -121,9 +93,9 @@ def laboratory_metadata(laboratory: pl.LazyFrame) -> pl.LazyFrame:
         ...     "ReferenceValue": ["Creatinine", "Creatinine", "Enzyme B", "Enzyme A", "Local test"],
         ... })
         >>> laboratory_metadata(lab).collect().rows()  # doctest: +NORMALIZE_WHITESPACE
-        [('2160-0', 'mg/dl', 'Creatinine, mg/dl (laboratory result)', ['LOINC/2160-0']),
-         ('LOCAL-1', None, 'Local test (laboratory result)', None),
-         (None, 'U/l', 'Enzyme A, U/l (laboratory result)\\nEnzyme B, U/l (laboratory result)', None)]
+        [('2160-0', 'mg/dl', 'Creatinine, mg/dl (laboratory result)'),
+         ('LOCAL-1', None, 'Local test (laboratory result)'),
+         (None, 'U/l', 'Enzyme A, U/l (laboratory result)\\nEnzyme B, U/l (laboratory result)')]
     """
     return (
         laboratory.select(
@@ -142,12 +114,6 @@ def laboratory_metadata(laboratory: pl.LazyFrame) -> pl.LazyFrame:
         )
         .group_by("LOINC_code", "ReferenceUnit")
         .agg(pl.col("description").sort().str.join(DESCRIPTION_SEPARATOR))
-        .with_columns(
-            parent_codes=pl.col("LOINC_code").map_elements(
-                lambda c: [f"LOINC/{c}"] if is_loinc_code(c) else None,
-                return_dtype=pl.List(pl.String),
-            )
-        )
         .sort("LOINC_code", "ReferenceUnit", nulls_last=True)
     )
 
@@ -285,7 +251,13 @@ def finalize_code_metadata(
 
     schema = code_metadata_schema()
     if codes_fp.is_file():
-        extracted = pl.from_arrow(pq.read_table(codes_fp, columns=schema.names))
+        present = set(pq.read_schema(codes_fp).names)
+        extracted = pl.from_arrow(
+            pq.read_table(codes_fp, columns=[c for c in schema.names if c in present])
+        )
+        for name in set(schema.names) - present:
+            dtype = pl.List(pl.String) if name == "parent_codes" else pl.String
+            extracted = extracted.with_columns(pl.lit(None, dtype).alias(name))
     else:
         extracted = pl.from_arrow(schema.empty_table())
     extracted = extracted.unique("code", keep="first")

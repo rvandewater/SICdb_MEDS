@@ -51,7 +51,6 @@ cases:
     _metadata: # Tables written by pre-MEDS, see code_metadata.py and the README section "Code metadata".
       diagnosis_metadata:
         description: description
-        parent_codes: parent_codes
 
 laboratory:
   lab:
@@ -66,7 +65,6 @@ laboratory:
     _metadata:
       laboratory_metadata:
         description: description
-        parent_codes: parent_codes
 
 medication:
   medication:

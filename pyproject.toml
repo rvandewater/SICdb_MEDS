@@ -22,6 +22,9 @@ dependencies = [
 
 [tool.setuptools_scm]
 
+[tool.setuptools.package-data]
+SICdb_MEDS = ["metadata/*.csv", "sumeds_rules.yaml"]
+
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
 tests = ["pytest", "pytest-cov"]

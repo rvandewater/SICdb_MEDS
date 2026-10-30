@@ -134,30 +134,23 @@ def test_config_blocks_produce_the_expected_metadata(pre_MEDS_dir):
         ],
         how="diagonal_relaxed",
     )
-    got = {
-        r["code"]: (r["description"], r["parent_codes"])
-        for r in out.iter_rows(named=True)
-    }
-    assert got["DIAGNOSIS//ICD10//I10"] == ("hypertension", ["ICD10/I10"])
-    assert got["DIAGNOSIS//ICD10//S62.60"] == ("finger fracture", ["ICD10/S62.6"])
-    assert got["DIAGNOSIS//ICD10//X1.x"] == ("malformed code", None)
+    # Vocabulary parents come from suMEDS (`sumeds_rules.yaml`, tests/test_sumeds_rules.py).
+    assert "parent_codes" not in out.columns
+    got = dict(zip(out["code"], out["description"], strict=True))
+    assert got["DIAGNOSIS//ICD10//I10"] == "hypertension"
+    assert got["DIAGNOSIS//ICD10//S62.60"] == "finger fracture"
+    assert got["DIAGNOSIS//ICD10//X1.x"] == "malformed code"
     assert "DIAGNOSIS//ICD10//UNK" not in got  # described by the static table instead
-    assert got["LAB//LOINC//2160-0//mg/dl"] == (
-        "Creatinine, mg/dl (laboratory result)",
-        ["LOINC/2160-0"],
-    )
-    assert got["LAB//LOINC//UNK//U/l"] == ("Enzyme, U/l (laboratory result)", None)
-    assert got["LAB//LOINC//LOCAL-1//UNK"] == ("Local test (laboratory result)", None)
-    assert (
-        got["VITAL//Heart rate//bpm"][0] == "Heart rate, bpm (hourly aggregated signal)"
-    )
-    assert got["MEDICATION_END//Drug group//Drug X//UNK"][0].startswith(
+    assert got["LAB//LOINC//2160-0//mg/dl"] == "Creatinine, mg/dl (laboratory result)"
+    assert got["LAB//LOINC//UNK//U/l"] == "Enzyme, U/l (laboratory result)"
+    assert got["LAB//LOINC//LOCAL-1//UNK"] == "Local test (laboratory result)"
+    assert got["VITAL//Heart rate//bpm"] == "Heart rate, bpm (hourly aggregated signal)"
+    assert got["MEDICATION_END//Drug group//Drug X//UNK"].startswith(
         "Drug X (end of drug administration"
     )
-    assert got["MEDICATION//Drug group"][0].startswith("Start of a drug administration")
-    assert (
-        got["SEX//735"][0] == "Sex: Synthetic sex (cases.Sex)"
-    )  # ReferenceValue of reference 735
+    assert got["MEDICATION//Drug group"].startswith("Start of a drug administration")
+    # ReferenceValue of reference 735
+    assert got["SEX//735"] == "Sex: Synthetic sex (cases.Sex)"
     assert out["code"].is_unique().all()
 
 
@@ -206,3 +199,23 @@ def test_finalize_code_metadata(tmp_path):
     assert out["VITAL//X//UNK"] == (None, None)
     assert counts == {"codes": 5, "described": 4, "with_parents": 1}
     assert finalize_code_metadata(tmp_path) == counts  # idempotent
+
+
+def test_finalize_code_metadata_without_parent_codes(tmp_path):
+    """No block emits parent codes, so the extracted file may lack the column."""
+    (tmp_path / "data" / "train").mkdir(parents=True)
+    (tmp_path / "metadata").mkdir()
+    data_codes = ["MEDS_BIRTH", "DIAGNOSIS//ICD10//I10"]
+    pl.DataFrame({"subject_id": [1, 2], "code": data_codes}).write_parquet(
+        tmp_path / "data" / "train" / "0.parquet"
+    )
+    pl.DataFrame(
+        {"code": ["DIAGNOSIS//ICD10//I10"], "description": ["hypertension"]}
+    ).write_parquet(tmp_path / "metadata" / "codes.parquet")
+
+    counts = finalize_code_metadata(tmp_path)
+
+    table = pq.read_table(tmp_path / "metadata" / "codes.parquet")
+    assert table.schema.equals(code_metadata_schema())
+    assert table.column("parent_codes").null_count == 2
+    assert counts == {"codes": 2, "described": 2, "with_parents": 0}
