@@ -1,10 +1,12 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8.0", "wheel"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "SICdb-MEDS"
-dynamic = ["version"]
+# Static so `uv version --bump <part>` can manage it. Releases tag this exact string (no `v`
+# prefix), and the publish workflow refuses a tag that disagrees. See DEVELOPMENT.md.
+version = "0.0.8"
 authors = [
   { name="Robin van de Water", email="robin.vandewater@hpi.de" },
 ]
@@ -25,7 +27,10 @@ classifiers = [
 # config uses; 0.7 rejects the new key and 0.8 rejects the old one.
 dependencies = ["MEDS-extract[download]>=0.8.0,<0.9"]
 
-[tool.setuptools_scm]
+# The whole pipeline is this one data file. setuptools-scm used to ship it implicitly (its git file
+# finder), so without it the wheel would build and install fine but have no pipeline in it.
+[tool.setuptools.package-data]
+SICdb_MEDS = ["messy.yaml"]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]

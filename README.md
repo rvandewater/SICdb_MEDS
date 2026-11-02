@@ -85,6 +85,11 @@ subjects you have in your dataset:
 export N_SUBJECTS_PER_SHARD=100000
 ```
 
+## Development
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
+process.
+
 ## Citation
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
