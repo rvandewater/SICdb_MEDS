@@ -61,7 +61,7 @@ export N_SUBJECTS_PER_SHARD=100000
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
 
-```
+```bibtex
 
 @article{rodemundHarnessingBigData2024,
 title = {Harnessing {Big} {Data} in {Critical} {Care}: {Exploring} a new {European} {Dataset}},
@@ -83,4 +83,17 @@ keywords = {Clinical trial design, Experimental models of disease},
 pages = {320},
 }
 
+```
+For the ETL:
+```bibtex
+@software{van_de_Water_SICdb_MEDS_ETL_2025,
+author = {van de Water, Robin P.},
+doi = {10.5281/zenodo.14893939},
+license = {MIT},
+month = feb,
+title = {{SICdb\_MEDS ETL}},
+url = {https://github.com/rvandewater/SICdb_MEDS},
+version = {0.0.1},
+year = {2025}
+}
 ```
