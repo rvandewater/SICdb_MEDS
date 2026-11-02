@@ -94,7 +94,7 @@ pinned release), which maintain one copy for all MEDS ETLs. This package ships a
 `sumeds-rules/0.1`). After the ETL, run:
 
 ```bash
-uvx --from "git+https://github.com/rvandewater/SumMEDS" suMEDS-enrich \
+uvx --from "sumeds>=0.4" suMEDS-enrich \
     $MEDS_cohort_dir/metadata/codes.parquet -o codes-enriched.parquet \
     --rules src/SICdb_MEDS/sumeds_rules.yaml
 ```
@@ -116,7 +116,7 @@ taken from ICD-10-GM
 The `ICD10` (WHO) tags are therefore an inference, not a documented mapping. WHO ICD-10 may not be
 redistributed, so suMEDS has no pack for it: the rule only tags codes, or validates them when your
 OHDSI Athena download (`--athena-csv`) has the `ICD10` vocabulary. `tests/test_sumeds_rules.py`
-checks that the file is well formed and that every rule matches the code layouts of
+loads the file with suMEDS and checks that every rule matches the code layouts of
 `configs/event_configs.yaml`.
 
 ## Citation

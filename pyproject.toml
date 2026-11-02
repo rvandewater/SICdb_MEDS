@@ -27,7 +27,8 @@ SICdb_MEDS = ["metadata/*.csv", "sumeds_rules.yaml"]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
-tests = ["pytest", "pytest-cov"]
+# tests/test_sumeds_rules.py loads the packaged rules with suMEDS itself.
+tests = ["pytest", "pytest-cov", "sumeds>=0.4"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
