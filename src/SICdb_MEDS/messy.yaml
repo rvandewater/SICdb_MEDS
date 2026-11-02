@@ -1,4 +1,4 @@
-# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.7).
+# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.8).
 #
 # This single file replaces what used to be spread across four places:
 #   - `dataset.yaml`               -> the `sources:` block below
@@ -26,7 +26,7 @@ etl:
   n_subjects_per_shard: 1000
 
 # `laboratory`, `data_ref`, `data_range` and `data_float_h` carry no PatientID of their own;
-# they pick one up from the `cases` join declared in their `_table.join` block. `medication`
+# they pick one up from the `cases` join declared in their `_table.joins` block. `medication`
 # and `cases` have the column natively.
 _defaults:
   subject_id: $PatientID
@@ -382,7 +382,7 @@ laboratory:
     # through `_metadata` instead, which needs no join -- so the code carries the raw
     # LaboratoryID and `metadata/codes.parquet` carries the name, unit and LOINC. This is the
     # same convention MIMIC_IV_MEDS uses for `LAB//<itemid>`.
-    join:
+    joins:
       cases:
         key: CaseID
         cols: [PatientID, OffsetAfterFirstAdmission]
@@ -431,7 +431,7 @@ medication:
     # dictionary is attached as metadata. medication does carry its own PatientID (verified
     # 100% consistent with cases), so the join must NOT also request it -- the column is
     # already on the left.
-    join:
+    joins:
       cases:
         key: CaseID
         cols: [OffsetAfterFirstAdmission]
@@ -496,7 +496,7 @@ medication:
 # ===========================================================================
 data_ref:
   _table:
-    join:
+    joins:
       cases:
         key: CaseID
         cols: [PatientID, OffsetAfterFirstAdmission, TimeOfStay]
@@ -559,7 +559,7 @@ data_ref:
 # ===========================================================================
 data_range:
   _table:
-    join:
+    joins:
       cases:
         key: CaseID
         cols: [PatientID, OffsetAfterFirstAdmission]
@@ -600,7 +600,7 @@ data_range:
 # ===========================================================================
 data_float_h:
   _table:
-    join:
+    joins:
       cases:
         key: CaseID
         cols: [PatientID, OffsetAfterFirstAdmission]
@@ -621,7 +621,6 @@ data_float_h:
         DataID: $ReferenceGlobalID
         description: $ReferenceValue
         unit: $ReferenceUnit
-
 # ===========================================================================
 # unitlog -- NOT EXTRACTED, on the evidence.
 #
