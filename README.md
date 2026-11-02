@@ -6,7 +6,7 @@
 [![tests](https://github.com/rvandewater/SICdb_MEDS/actions/workflows/tests.yaml/badge.svg)](https://github.com/rvandewater/SICdb_MEDS/actions/workflows/tests.yml)
 [![code-quality](https://github.com/rvandewater/SICdb_MEDS/actions/workflows/code-quality-main.yaml/badge.svg)](https://github.com/rvandewater/SICdb_MEDS/actions/workflows/code-quality-main.yaml)
 ![python](https://img.shields.io/badge/-Python_3.12-blue?logo=python&logoColor=white)
-![Static Badge](https://img.shields.io/badge/MEDS-0.3.3-blue)
+![Static Badge](https://img.shields.io/badge/MEDS-0.4.1-blue)
 [![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/rvandewater/SICdb_MEDS#license)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/rvandewater/SICdb_MEDS/pulls)
 [![contributors](https://img.shields.io/github/contributors/rvandewater/SICdb_MEDS.svg)](https://github.com/rvandewater/SICdb_MEDS/graphs/contributors)
@@ -22,16 +22,44 @@ and machine learning-based research. (source: https://www.sicdb.com/Documentatio
 ## Usage
 
 ```bash
-pip install SICdb_MEDS # you can do this locally or via PyPI
-# Download your data or set download credentials
-MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR
+pip install SICdb_MEDS
+export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
+export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 
-# or, if you have the data already downloaded
-MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_download=False
+meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR
 
-# or, if you want enable waveform extraction and processing (takes significantly longer and up to 100GB of RAM)
-MEDS_extract-SICdb root_output_dir=$ROOT_OUTPUT_DIR do_process_waveform=True
+# or, if the release is already on disk
+meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR do_download=false input_dir=$RAW_INPUT_DIR
 ```
+
+Waveform extraction is not currently supported; see
+[#1](https://github.com/rvandewater/SICdb_MEDS/issues/1).
+
+## Configuration
+
+The entire ETL is described by one file, `src/SICdb_MEDS/messy.yaml` — a
+[MESSY](https://github.com/mmcdermott/MEDS_extract) config carrying three sections:
+
+- **`sources:`** — where the raw data lives. `meds-extract-download` stages it, with SHA-256
+    verification and resumable transfers. This replaces the old hand-rolled `download.py`.
+- **`etl:`** — the dataset name plus curated stage options (`n_subjects_per_shard`).
+- **the event tables** — what to extract, written in
+    [dftly](https://github.com/mmcdermott/dftly) expressions.
+
+Because the config is registered under the `MEDS_extract.pipelines` entry-point group, the
+extraction half is runnable directly, without this package's CLI wrapper:
+
+```bash
+# Stage the raw data only:
+meds-extract-download spec=SICdb output_dir=$RAW_INPUT_DIR
+
+# Run the canonical 8-stage pipeline over already-pre-MEDS'd data:
+meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR download_key=null input_dir=$PRE_MEDS_DIR
+```
+
+There is no wrapper CLI and no pre-MEDS step. Both are gone: the archive is unpacked by the
+download layer, and offsets are resolved to absolute pseudo-timestamps in `_table.cols`. The
+package ships no Python at all -- the whole ETL is `src/SICdb_MEDS/messy.yaml`.
 
 ## MEDS-transforms settings
 
@@ -57,73 +85,16 @@ subjects you have in your dataset:
 export N_SUBJECTS_PER_SHARD=100000
 ```
 
-## Code metadata
+## Development
 
-`metadata/codes.parquet` lists every code in the data with a `description`. The ETL adds no
-vocabulary parents (`parent_codes` is null); suMEDS adds them from the packaged rules file (see
-[Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds)).
-
-- `DIAGNOSIS//ICD10//{ICD10Main}`: SICdb's own `cases.ICD10MainText`.
-- `LAB//LOINC//{LOINC_code}//{unit}`: the analyte name (`d_references.ReferenceValue`) and unit, all
-    analytes that share the code.
-- `SEX//…`, `VITAL//…`, `MEDICATION//…`, `MEDICATION_END//…`: the `d_references` value the code carries
-    and what the event is.
-- Literal codes (`MEDS_BIRTH`, `ADMISSION`, `WEIGHT`, ...) and `DIAGNOSIS//ICD10//UNK`:
-    [`static_code_descriptions.csv`](src/SICdb_MEDS/metadata/static_code_descriptions.csv), which records
-    the source of every row.
-
-Pre-MEDS builds the first three from SICdb's own dictionary at ETL time, as the tables
-`diagnosis_metadata`, `laboratory_metadata` and `reference_metadata` next to the pre-MEDS tables, and the
-`_metadata` blocks in `configs/event_configs.yaml` join them onto the codes in `extract_code_metadata`.
-Literal codes have no component to join on, so after the pipeline
-[`code_metadata.finalize_code_metadata`](src/SICdb_MEDS/code_metadata.py) fills them in and writes
-`codes.parquet` with the MEDS code-metadata schema. Nothing from SICdb is shipped with this package.
-
-- The LOINC codes are SICdb's own (`d_references.LOINC_code`, added in 1.0.8).
-- `WEIGHT` is in grams, as stored in `cases.WeightOnAdmission`.
-- The pre-MEDS laboratory table now carries the analyte name; a `pre_MEDS/laboratory.parquet` from an
-    older version of this ETL is rejected, so delete it and re-run.
-- Descriptions follow the [SICdb documentation](https://www.sicdb.com/Documentation/Main_Page) (CC BY 4.0).
-
-## Enriching code metadata with suMEDS
-
-Vocabulary work (ontology tagging, LOINC validation) lives in
-[suMEDS](https://github.com/rvandewater/SumMEDS) and its versioned ontology data (sumeds-ontologies,
-pinned release), which maintain one copy for all MEDS ETLs. This package ships a rules file for it,
-[`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml) (package data, format
-`sumeds-rules/0.1`). After the ETL, run:
-
-```bash
-uvx --from "sumeds>=0.4" suMEDS-enrich \
-    $MEDS_cohort_dir/metadata/codes.parquet -o codes-enriched.parquet \
-    --rules src/SICdb_MEDS/sumeds_rules.yaml
-```
-
-| Rule                           | Kind                                     | Adds                                                                                                                                                      |
-| ------------------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sicdb-diagnosis-icd10`        | ontology, `ICD10`, `validate: none`      | `ICD10//{ICD10Main}` as parent, or the four-character subcategory of a five-character code (`S62.60` gets `ICD10//S62.6`); other shapes get none          |
-| `sicdb-lab-loinc`              | ontology, `LOINC`, `validate: pack`      | `LOINC//{LOINC_code}` with `vocabulary_id`/`concept_code`, when SICdb's own LOINC code is in the LOINC pack; a code that is not in LOINC gets nothing     |
-| `sicdb-diagnosis-icd10-prefix` | hierarchy, `mode: prefix`, `ignore: '.'` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD10//S62.60` gets `DIAGNOSIS//ICD10//S62.6`, else `DIAGNOSIS//ICD10//S62`) |
-
-On SICdb 1.0.8 the rules tag 2,153 of 2,169 diagnosis codes with `ICD10`, validate 380 of 401 lab
-codes against LOINC, and give 224 diagnosis codes a same-dataset parent. The ETL alone does not emit
-these parents.
-
-SICdb does not name its ICD-10 version. Austrian hospitals code with the Austrian ICD-10, which the
-health ministry describes as based on the German-language ICD-10 WHO, with some five-character codes
-taken from ICD-10-GM
-([Medizinische Dokumentation, section 2.1](https://www.sozialministerium.at/dam/jcr:2acd92ba-9b21-45c4-a4f6-d8345943e7b1/MEDIZINISCHEDOKUMENTATION2022.pdf)).
-The `ICD10` (WHO) tags are therefore an inference, not a documented mapping. WHO ICD-10 may not be
-redistributed, so suMEDS has no pack for it: the rule only tags codes, or validates them when your
-OHDSI Athena download (`--athena-csv`) has the `ICD10` vocabulary. `tests/test_sumeds_rules.py`
-loads the file with suMEDS and checks that every rule matches the code layouts of
-`configs/event_configs.yaml`.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
+process.
 
 ## Citation
 
 If you use this dataset, please cite the original publication below and the ETL (see cite this repository):
 
-```
+```bibtex
 
 @article{rodemundHarnessingBigData2024,
 title = {Harnessing {Big} {Data} in {Critical} {Care}: {Exploring} a new {European} {Dataset}},
@@ -145,4 +116,17 @@ keywords = {Clinical trial design, Experimental models of disease},
 pages = {320},
 }
 
+```
+For the ETL:
+```bibtex
+@software{van_de_Water_SICdb_MEDS_ETL_2025,
+author = {van de Water, Robin P.},
+doi = {10.5281/zenodo.14893939},
+license = {MIT},
+month = feb,
+title = {{SICdb\_MEDS ETL}},
+url = {https://github.com/rvandewater/SICdb_MEDS},
+version = {0.0.1},
+year = {2025}
+}
 ```

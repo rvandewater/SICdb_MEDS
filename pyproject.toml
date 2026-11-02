@@ -1,39 +1,47 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8.0", "wheel"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "SICdb-MEDS"
-dynamic = ["version"]
+# Static so `uv version --bump <part>` can manage it. Releases tag this exact string (no `v`
+# prefix), and the publish workflow refuses a tag that disagrees. See DEVELOPMENT.md.
+version = "0.1.0"
 authors = [
   { name="Robin van de Water", email="robin.vandewater@hpi.de" },
 ]
-description = "A template ETL pipeline to extract arbitrary data into the MEDS format."
+description = "An ETL pipeline to extract the Salzburg Intensive Care database (SICdb) into the MEDS format."
 readme = "README.md"
-requires-python = ">=3.11"
+# Mirrors MEDS-Extract 0.8's own floor and ceiling. A looser range admits interpreters it cannot
+# be installed on, and uv then refuses to resolve at all.
+requires-python = ">=3.11.4,<3.14"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-  "meds-transforms~=0.2.4", "requests", "beautifulsoup4", "hydra-core", "loguru"
-]
+# Pure-config ETL: MEDS-Extract supplies both CLIs and every extraction stage, and fences the
+# MEDS-transforms / polars / hydra versions itself. Pinning those here only creates drift -- the
+# stale `MEDS-transforms>=0.6.7,<0.7` made the project unresolvable against meds-extract 0.7.
+# 0.8 is the floor because it renamed the MESSY `_table.join` key to `_table.joins`, which this
+# config uses; 0.7 rejects the new key and 0.8 rejects the old one.
+dependencies = ["MEDS-extract[download]>=0.8.0,<0.9"]
 
-[tool.setuptools_scm]
-
+# The whole pipeline is this one data file. setuptools-scm used to ship it implicitly (its git file
+# finder), so without it the wheel would build and install fine but have no pipeline in it.
 [tool.setuptools.package-data]
-SICdb_MEDS = ["metadata/*.csv", "sumeds_rules.yaml"]
+SICdb_MEDS = ["messy.yaml"]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
-# tests/test_sumeds_rules.py loads the packaged rules with suMEDS itself.
-tests = ["pytest", "pytest-cov", "sumeds>=0.4"]
+tests = ["pytest", "pytest-cov"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
-[project.scripts]
-MEDS_extract-SICdb= "SICdb_MEDS.__main__:main"
+# Registers the bundled MESSY file as a MEDS-Extract dataset pipeline, so the whole
+# ETL is runnable as `meds-extract-run spec=SICdb output_dir=...`.
+[project.entry-points."MEDS_extract.pipelines"]
+SICdb = "SICdb_MEDS:messy.yaml"
 
 [project.urls]
 Homepage = "https://github.com/rvandewater/SICdb_MEDS"
