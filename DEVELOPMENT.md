@@ -20,6 +20,18 @@ uv run pytest src/ tests/ -v
 The tests parse the bundled config against the installed MEDS-Extract. They need no raw data or
 credentials. CI runs them on Python 3.11 and 3.12.
 
+- `tests/test_code_metadata.py` checks that every event block describes its codes.
+- `tests/test_sumeds_rules.py` loads `sumeds_rules.yaml` with suMEDS and runs the rules, offline, on
+    codes that MEDS-Extract renders from the config.
+
+`test_built_codes_metadata` checks a finished build instead. It validates `codes.parquet` against
+the MEDS schema and checks that every code in the data has a description. It reports counts per code
+family only:
+
+```bash
+SICDB_MEDS_OUTPUT_DIR=$OUT uv run pytest tests/test_code_metadata.py
+```
+
 ## Running the ETL locally
 
 SICdb is credentialed PhysioNet data. Never commit raw files or MEDS outputs. In issues and PRs,

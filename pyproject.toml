@@ -29,12 +29,14 @@ dependencies = ["MEDS-extract[download]>=0.8.0,<0.9"]
 
 # The whole pipeline is this one data file. setuptools-scm used to ship it implicitly (its git file
 # finder), so without it the wheel would build and install fine but have no pipeline in it.
+# `sumeds_rules.yaml` is the suMEDS enrichment rules file (README, "Code metadata").
 [tool.setuptools.package-data]
-SICdb_MEDS = ["messy.yaml"]
+SICdb_MEDS = ["messy.yaml", "sumeds_rules.yaml"]
 
 [project.optional-dependencies]
 dev = ["pre-commit<4"]
-tests = ["pytest", "pytest-cov"]
+# suMEDS loads the packaged rules in tests/test_sumeds_rules.py; 0.4 is its first release with rules.
+tests = ["pytest", "pytest-cov", "sumeds>=0.4"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 

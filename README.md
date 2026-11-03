@@ -61,6 +61,55 @@ There is no wrapper CLI and no pre-MEDS step. Both are gone: the archive is unpa
 download layer, and offsets are resolved to absolute pseudo-timestamps in `_table.cols`. The
 package ships no Python at all -- the whole ETL is `src/SICdb_MEDS/messy.yaml`.
 
+## Code metadata
+
+`metadata/codes.parquet` describes every code in the data. Every description is defined in
+`messy.yaml` and comes from SICdb's own tables or its
+[documentation](https://www.sicdb.com/Documentation/Main_Page):
+
+- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION//…`,
+    `CASE_ATTR//…`, `DEVICE//…`, `VITAL//…` and the other `cases` reference columns): the
+    `d_references` entry, through a `_metadata` block keyed on the id. Lab codes also get the unit and
+    the LOINC long name.
+- `DIAGNOSIS//ICD10GM//…`: `cases.ICD10MainText`.
+- Every other code (`MEDS_BIRTH`, `MEDS_DEATH`, `SEX//…`, `ADMISSION_YEAR//…`, `ICU_ADMISSION`,
+    `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
+    column.
+
+MEDS-Extract 0.8 rejects a `_self` block on a bare literal code (`code: ICU_ADMISSION`). The literal
+codes are therefore read from constant columns of `cases._table.cols`
+(`_code_icu_admission: '"ICU_ADMISSION"'`), and the emitted codes are unchanged. The next MEDS-Extract
+release accepts `_self` on a literal code
+([MEDS_extract#315](https://github.com/mmcdermott/MEDS_extract/pull/315)).
+
+The ETL writes the vocabulary parents that SICdb records itself:
+
+- `ICD10GM/{ICD10Main}` for a diagnosis with a canonical ICD-10-GM code.
+- `LOINC/{LOINC_code}` for a lab whose `d_references.LOINC_code` is a well-formed LOINC code.
+
+## Enriching code metadata with suMEDS
+
+[suMEDS](https://github.com/rvandewater/SumMEDS) adds names and ancestors to those parents from its
+versioned ontology data. It uses the LOINC pack for `LOINC/…`. It has no ICD-10-GM pack, so for
+`ICD10GM/…` it needs an OHDSI Athena download with the vocabulary (`--athena-csv`). This package
+also ships a rules file for what SICdb does not record,
+[`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml) (package data, format
+`sumeds-rules/0.1`). After the ETL, run:
+
+```bash
+uvx --from "sumeds>=0.4" suMEDS-enrich \
+    $MEDS_COHORT_DIR/metadata/codes.parquet -o codes-enriched.parquet \
+    --rules "$(python -c 'from importlib.resources import files; print(files("SICdb_MEDS") / "sumeds_rules.yaml")')"
+```
+
+| Rule                             | Kind                                     | Adds                                                                                                                                                            |
+| -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD10GM//S62.60` gets `DIAGNOSIS//ICD10GM//S62.6`, else `DIAGNOSIS//ICD10GM//S62`) |
+
+Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM/` parent accepts.
+`tests/test_sumeds_rules.py` loads the file with suMEDS and runs the rule, offline, on codes that
+MEDS-Extract renders from `messy.yaml`.
+
 ## MEDS-transforms settings
 
 If you want to convert a large dataset, you can use parallelization with MEDS-transforms
@@ -117,7 +166,9 @@ pages = {320},
 }
 
 ```
+
 For the ETL:
+
 ```bibtex
 @software{van_de_Water_SICdb_MEDS_ETL_2025,
 author = {van de Water, Robin P.},

@@ -127,6 +127,17 @@ cases:
       _dob: "$_origin - ($AgeOnAdmission * 365.25 + 182.625)::days"
       # WeightOnAdmission is GRAMS (median 75,000; "Rounded to +-5kg"), not kg.
       _weight_kg: "$WeightOnAdmission / 1000.0"
+      # Constant code columns. MEDS-Extract 0.8 attaches code metadata only through a code's
+      # components, so a bare literal such as `code: ICU_ADMISSION` cannot carry a `_self`
+      # block; reading the same string from a constant column gives the code one component.
+      # The emitted codes are unchanged. MEDS-Extract's next release accepts `_self` on a
+      # literal code (mmcdermott/MEDS_extract#315), and these columns can then go.
+      _code_death: '"MEDS_DEATH"'
+      _code_icu_admission: '"ICU_ADMISSION"'
+      _code_heart_surgery_begin: '"HEART_SURGERY_BEGIN"'
+      _code_heart_surgery_end: '"HEART_SURGERY_END"'
+      _code_heart_surgery_cpb: '"HEART_SURGERY_CPB_MINUTES"'
+      _code_heart_surgery_crossclamp: '"HEART_SURGERY_CROSSCLAMP_MINUTES"'
 
   # One MEDS_BIRTH per SUBJECT, not per case. AgeOnAdmission is recorded per case and drifts
   # across a patient's cases, so emitting it unguarded would give a 12-case patient 12
@@ -137,6 +148,13 @@ cases:
   birth:
     code: '"MEDS_BIRTH" if $OffsetAfterFirstAdmission == 0'
     time: $_dob
+    _metadata:
+      _self:
+        description: >-
+          "Birth (MEDS birth code), approximate: SICdb records no birth date, so the time is the
+          first admission minus cases.AgeOnAdmission and half a year (whole years in 5-year bins,
+          capped at 90). Times are on a shifted timeline that puts every subject's first admission
+          on 2017-07-02"
 
   # One MEDS_DEATH per SUBJECT. This one needs no guard: every case of a dead patient that
   # carries OffsetOfDeath resolves to the *identical* instant on this timeline (verified:
@@ -146,8 +164,14 @@ cases:
   # 518 of the 4,142 deaths: OffsetOfDeath is 1-year mortality, so a patient who died >1 y
   # after their first admission but <1 y after a later one is recorded only on the later case.
   death:
-    code: '"MEDS_DEATH"'
+    code: $_code_death
     time: $_death
+    _metadata:
+      _self:
+        description: >-
+          "Death (MEDS death code), at cases.OffsetOfDeath after the case admission. SICdb
+          records 1-year mortality only: a death more than a year after every admission of the
+          subject is absent"
 
   # Static (time: null). Sex is constant across all of a patient's cases (verified on 100% of
   # them), so the per-case duplicates are byte-identical and collapse at merge.
@@ -156,12 +180,22 @@ cases:
   sex:
     code: '"SEX//male" if $Sex == 735 else "SEX//female" if $Sex == 736 else "SEX//unknown"'
     time: null
+    _metadata:
+      _self:
+        description: >-
+          "Sex: male (cases.Sex 735)" if $Sex == 735 else "Sex: female (cases.Sex 736)" if $Sex
+          == 736 else "Sex: unknown (cases.Sex is neither 735, male, nor 736, female)"
 
   # The real calendar year of the admission, which the shared `_origin` otherwise discards.
   admission_year:
     code: 'f"ADMISSION_YEAR//{$AdmissionYear}"'
     time: $_adm
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          f"Calendar year of the case admission: {$AdmissionYear} (cases.AdmissionYear). Event
+          times are on a shifted timeline; this code keeps the real year"
 
   # ---- Reference-coded columns of `cases` -------------------------------------------------
   # `cases` has ten columns whose values are d_references keys, but a table may join any
@@ -222,9 +256,14 @@ cases:
         EstimatedSurvivalObservationTime: $ReferenceGlobalID
         description: $ReferenceValue
   icu_admission:
-    code: ICU_ADMISSION
+    code: $_code_icu_admission
     time: $_icu
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "ICU admission: the first transfer to an intensive or intermediate care ward
+          (cases.ICUOffset after the case admission)"
   # "DischargeState indicates the patient's state upon discharge from the ICU ... indicates
   # survival on icu".
   discharge:
@@ -290,12 +329,20 @@ cases:
     time: $_icu
     numeric_value: $saps3
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: '"SAPS III score, from the first hour of ICU care (cases.saps3)"'
   # A whole-stay total, so it is only known at the case close. 0 means no CRRT was given.
   crrt_hours:
     code: '"CRRT_HOURS" if $HoursOfCRRT > 0'
     time: $_dis
     numeric_value: $HoursOfCRRT
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "Hours of continuous renal replacement therapy (CRRT) over the case, recorded at the
+          case close (cases.HoursOfCRRT; cases without CRRT have no event)"
   # 25 cases have a discharge day but no stay length; without the guard those would emit a
   # HOSPITAL_STAY_DAYS event carrying a null numeric_value, which is a measurement that was
   # never taken. (The other 109 nulls are already dropped by the null `_hospdis`.)
@@ -304,6 +351,11 @@ cases:
     time: $_hospdis
     numeric_value: $HospitalStayDays
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "Length of the hospital stay in days, recorded at the hospital discharge
+          (cases.HospitalStayDays)"
 
   # ---- Diagnosis -------------------------------------------------------------------------
   # Placed at the case close, not at admission: ICD10Main is the case's coded main diagnosis,
@@ -342,28 +394,50 @@ cases:
     time: $_dis
     text_value: $DiagnosisT2
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "Free-text secondary diagnosis of the case, recorded at the case close (cases.DiagnosisT2,
+          in text_value)"
 
   # ---- Cardiac surgery (8.6% of cases) ----------------------------------------------------
   heart_surgery_begin:
-    code: HEART_SURGERY_BEGIN
+    code: $_code_heart_surgery_begin
     time: $_surg_beg
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "Start of heart surgery (cases.HeartSurgeryBeginOffset after the case admission)"
   heart_surgery_end:
-    code: HEART_SURGERY_END
+    code: $_code_heart_surgery_end
     time: $_surg_end
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: '"End of heart surgery (cases.HeartSurgeryEndOffset after the case admission)"'
   # Both are durations in MINUTES, recorded against the operation, so they are stamped at its
   # end. They are non-null on exactly the cardiac-surgery cases.
   heart_surgery_cpb_time:
-    code: HEART_SURGERY_CPB_MINUTES
+    code: $_code_heart_surgery_cpb
     time: $_surg_end
     numeric_value: $HeartSurgeryCPBTime
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "Cardiopulmonary bypass time of the heart surgery, minutes, recorded at its end
+          (cases.HeartSurgeryCPBTime)"
   heart_surgery_crossclamp_time:
-    code: HEART_SURGERY_CROSSCLAMP_MINUTES
+    code: $_code_heart_surgery_crossclamp
     time: $_surg_end
     numeric_value: $HeartSurgeryCrossClampTime
     CaseID: $CaseID
+    _metadata:
+      _self:
+        description: >-
+          "Cross-clamp time of the heart surgery, minutes, recorded at its end
+          (cases.HeartSurgeryCrossClampTime)"
 
 # ===========================================================================
 # laboratory -- 17.9M rows, the largest table that ships complete in 1.0.8.
