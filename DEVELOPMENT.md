@@ -7,9 +7,12 @@ point as `SICdb`. There is no ETL code to change, only that file.
 ## Setup
 
 ```bash
-uv sync --extra tests --extra dev
+uv sync
 uv run pre-commit install
 ```
+
+`uv sync` installs the `dev` dependency group (pre-commit, pytest) by default, so no `--extra`
+flags are needed.
 
 ## Tests
 

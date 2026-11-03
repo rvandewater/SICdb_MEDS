@@ -117,7 +117,9 @@ pages = {320},
 }
 
 ```
+
 For the ETL:
+
 ```bibtex
 @software{van_de_Water_SICdb_MEDS_ETL_2025,
 author = {van de Water, Robin P.},
