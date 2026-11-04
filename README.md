@@ -85,6 +85,34 @@ subjects you have in your dataset:
 export N_SUBJECTS_PER_SHARD=100000
 ```
 
+## Summary statistics
+
+[`tests/regression/full_summary_stats.json`](tests/regression/full_summary_stats.json) is a
+[meds_summary_stats](https://github.com/Medical-Event-Data-Standard/meds_summary_stats) fingerprint of
+the MEDS dataset this ETL builds from the full SICdb 1.0.8 release: subject, event and measurement
+counts, digests of the code vocabulary, per-subject, value and time distributions, code-metadata
+coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
+no minimum or maximum, which is what makes it safe to publish. Because it is committed next to the ETL,
+its diff shows what an ETL change did to the output, and two ETL versions can be compared without
+access to the data.
+
+Regenerate it in every pull request that changes the output, from a build of that branch:
+
+```bash
+# Build the release with this checkout, then summarize it
+scripts/summary_stats.sh full --input-dir $RAW_INPUT_DIR
+# Or summarize a build of this checkout you already have
+scripts/summary_stats.sh full --meds-dir $MEDS_OUTPUT_DIR
+```
+
+Both print how the statistics changed against the committed baseline before overwriting it. Add
+`--compare` to check a build without writing anything; it exits 1 when
+[`tests/regression/policy.yaml`](tests/regression/policy.yaml) flags an error. Rebuilding the same
+commit reproduces the baseline exactly, so any finding is a change in the output. CI cannot rebuild the
+credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
+when a pull request changes `src/` without regenerating the baseline. A MEDS-Extract or polars upgrade
+can also move the output, so check it with `--compare`.
+
 ## Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
