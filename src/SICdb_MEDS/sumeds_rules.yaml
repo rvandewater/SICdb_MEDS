@@ -1,0 +1,26 @@
+# suMEDS enrichment rules for SICdb-MEDS (format `sumeds-rules/0.1`, read by suMEDS >= 0.4;
+# https://github.com/rvandewater/SumMEDS).
+#
+# The ETL writes what SICdb itself records: a description for every code, `ICD10GM/<code>`
+# parents for `DIAGNOSIS//ICD10GM//<code>` (cases.ICD10Main) and `LOINC/<code>` parents for
+# `LAB//<LaboratoryID>//<specimen>` (d_references.LOINC_code). suMEDS resolves those existing
+# references, with names and ancestors, from its ontology packs or an Athena download without any
+# rule. This file adds what SICdb does not record:
+#
+# - hierarchy `sicdb-diagnosis-icd10gm-prefix`: a diagnosis code's nearest shorter ICD-10-GM code
+#   that also occurs in the data becomes its parent.
+#
+#   suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
+#     --rules "$(python -c 'from importlib.resources import files; print(files("SICdb_MEDS") / "sumeds_rules.yaml")')"
+schema: sumeds-rules/0.1
+
+hierarchy:
+  # `S62.60` gets `DIAGNOSIS//ICD10GM//S62.6` if that code occurs, else `DIAGNOSIS//ICD10GM//S62`;
+  # the dot is skipped. Only the canonical shapes the ETL's `ICD10GM/` parent accepts (letter, two
+  # digits, then optionally a dot and one or two digits) take part, so the non-canonical values
+  # the config describes (`C19.x1`, `103.2`) get no same-dataset parent and are no one's parent.
+  - id: sicdb-diagnosis-icd10gm-prefix
+    pattern: '^(?P<prefix>DIAGNOSIS//ICD10GM//)(?P<code>[A-Z][0-9]{2}(?:\.[0-9]{1,2})?)$'
+    group: code
+    mode: prefix
+    ignore: "."
