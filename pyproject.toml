@@ -40,6 +40,12 @@ tests = ["pytest", "pytest-cov", "sumeds>=0.4"]
 local_parallelism = ["hydra-joblib-launcher"]
 slurm_parallelism = ["hydra-submitit-launcher"]
 
+# Development tools. Unlike an extra, uv installs the `dev` group by default on every `uv sync`
+# and `uv run`, so a plain `uv sync` can't uninstall pre-commit from under the git hook. Groups
+# are not published in the wheel's metadata. CI installs it with `pip install --group dev`.
+[dependency-groups]
+dev = ["pre-commit<4", "pytest", "pytest-cov"]
+
 # Registers the bundled MESSY file as a MEDS-Extract dataset pipeline, so the whole
 # ETL is runnable as `meds-extract-run spec=SICdb output_dir=...`.
 [project.entry-points."MEDS_extract.pipelines"]

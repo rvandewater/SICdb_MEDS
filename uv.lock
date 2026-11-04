@@ -857,9 +857,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "pre-commit" },
-]
 local-parallelism = [
     { name = "hydra-joblib-launcher" },
 ]
@@ -872,17 +869,30 @@ tests = [
     { name = "sumeds" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "hydra-joblib-launcher", marker = "extra == 'local-parallelism'" },
     { name = "hydra-submitit-launcher", marker = "extra == 'slurm-parallelism'" },
     { name = "meds-extract", extras = ["download"], specifier = ">=0.8.0,<0.9" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = "<4" },
     { name = "pytest", marker = "extra == 'tests'" },
     { name = "pytest-cov", marker = "extra == 'tests'" },
     { name = "sumeds", marker = "extra == 'tests'", specifier = ">=0.4" },
 ]
-provides-extras = ["dev", "tests", "local-parallelism", "slurm-parallelism"]
+provides-extras = ["tests", "local-parallelism", "slurm-parallelism"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pre-commit", specifier = "<4" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
 
 [[package]]
 name = "six"
