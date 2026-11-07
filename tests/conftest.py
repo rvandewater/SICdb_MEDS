@@ -239,13 +239,14 @@ def raw_dir(tmp_path_factory) -> Path:
     return raw_dir
 
 
-def run_command(argv: list[str]) -> None:
-    """Run a CLI, failing the test with its full output if it does not succeed."""
+def run_command(argv: list[str]) -> str:
+    """Run a CLI, failing the test with its full output if it does not succeed; return its stderr."""
     result = subprocess.run(argv, capture_output=True, text=True)
     assert result.returncode == 0, (
         f"{argv[0]} failed with exit code {result.returncode}.\n"
         f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     )
+    return result.stderr
 
 
 @pytest.fixture(scope="session")

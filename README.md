@@ -113,12 +113,22 @@ suMEDS-extract spec=SICdb output_dir=$MEDS_COHORT_DIR -- --athena-csv /path/to/a
 suMEDS-extract spec=SICdb output_dir=$MEDS_COHORT_DIR -- --offline
 ```
 
-Running it again on an existing output skips the pipeline stages that are already done and
-enriches again. To enrich the `codes.parquet` of an existing build instead:
+Enrichment is on by default and soft-fails: if it cannot run (a server without internet, for
+example), the ETL still succeeds with `metadata/codes.parquet` left exactly as `meds-extract-run`
+writes it, and a warning gives the command to enrich it later. `metadata/dataset.json` says whether
+a build is enriched: `sumeds_enrichment.enriched` is `true` (with the rules, pack source and
+coverage) or `false` (with the error and the `retry` command). To enrich a build afterwards, with
+the rules and options of the default run:
 
 ```bash
-suMEDS-enrich "$MEDS_COHORT_DIR/metadata/codes.parquet" -o "$MEDS_COHORT_DIR/metadata/codes.parquet" --rules SICdb
+suMEDS-enrich $MEDS_COHORT_DIR
+# Air-gapped: from a copy of the sumeds-ontologies packs directory
+suMEDS-enrich $MEDS_COHORT_DIR --ontology-source /path/to/sumeds-ontologies/ontologies --offline
 ```
+
+For the plain, unenriched ETL, run `meds-extract-run` instead of `suMEDS-extract`. To make a failed
+enrichment an error (exit code 1), pass `-- --strict`. Running `suMEDS-extract` again on an existing
+output skips the pipeline stages that are already done and enriches again.
 
 The ETL already describes every code, and suMEDS never overwrites a value, so the descriptions stay
 SICdb's own. For SICdb, suMEDS adds:
@@ -144,7 +154,9 @@ same rules work with `suMEDS … --rules SICdb` to build a privacy-masked code c
 `tests/test_sumeds_rules.py` loads the rules by their registered name and runs the rule, offline, on
 codes that MEDS-Extract renders from `messy.yaml`. `tests/test_run_with_enrichment.py` runs
 `suMEDS-extract spec=SICdb` on a small synthetic release (`tests/conftest.py`) with a local LOINC
-pack, and checks that the enrichment keeps every value the ETL wrote.
+pack, and checks that the enrichment keeps every value the ETL wrote and is recorded in
+`dataset.json`. It also runs against an empty pack source, to check the soft failure and its
+`suMEDS-enrich` retry.
 
 ## MEDS-transforms settings
 

@@ -26,11 +26,13 @@ classifiers = [
 # 0.8 is the floor because it renamed the MESSY `_table.join` key to `_table.joins`, which this
 # config uses; 0.7 rejects the new key and 0.8 rejects the old one.
 # suMEDS provides `suMEDS-extract`, which runs this ETL and then enriches its code metadata with
-# the rules registered below. 0.6 is the floor because it writes `parent_names` as a map from
-# code to name; it is capped below the next minor because its rules format and CLI are still 0.x.
+# the rules registered below. 0.6.1 is the floor because its `suMEDS-extract` soft-fails
+# enrichment (a site without internet still gets its ETL) and records in `metadata/dataset.json`
+# whether the build was enriched; it is capped below the next minor because its rules format and
+# CLI are still 0.x.
 dependencies = [
   "MEDS-extract[download]>=0.8.0,<0.9",
-  "sumeds>=0.6,<0.7",
+  "sumeds>=0.6.1,<0.7",
 ]
 
 # The whole pipeline is this one data file. setuptools-scm used to ship it implicitly (its git file

@@ -5,7 +5,9 @@ as its MEDS-Extract spec, so `suMEDS-extract` finds them from `spec=SICdb` alone
 source is a tiny pack repository in suMEDS's `sumeds-ontologies/0.1` layout, built here with a
 LOINC pack that holds a made-up title for the one synthetic LOINC code of ``conftest.py``, so the
 test reads nothing over the network and does not depend on the published packs. suMEDS has no
-ICD-10-GM pack, so the diagnoses gain only the same-dataset parents of the packaged rule.
+ICD-10-GM pack, so the diagnoses gain only the same-dataset parents of the packaged rule. Another
+run points at an empty pack source, which is how a site without internet fails: the ETL still
+succeeds, unenriched, and `suMEDS-enrich` completes it later.
 """
 
 import csv
@@ -20,7 +22,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from conftest import run_command
-from meds import CodeMetadataSchema
+from meds import CodeMetadataSchema, DatasetMetadataSchema
 
 LOINC_RELEASE = "2.83"
 LOINC_TITLES = {"2160-0": "Synthetic LOINC title 2160-0"}
@@ -41,6 +43,13 @@ def names(value) -> dict[str, str]:
     if isinstance(value, dict):
         return value
     return {entry["key"]: entry["value"] for entry in value}
+
+
+def _dataset(output_dir: Path) -> dict:
+    """`dataset.json`, checked to still be valid MEDS dataset metadata."""
+    dataset = json.loads((output_dir / "metadata" / "dataset.json").read_text())
+    DatasetMetadataSchema.validate(dataset)
+    return dataset
 
 
 @pytest.fixture(scope="session")
@@ -217,4 +226,87 @@ def test_enriching_an_existing_build_gives_the_same_codes(
             str(ontology_source),
         ]
     )
+    assert pl.read_parquet(codes_fp).sort("code").equals(enriched_codes.sort("code"))
+
+
+def test_dataset_json_records_the_enrichment(
+    enriched_output: Path,
+    meds_output: Path,
+    codes: pl.DataFrame,
+    enriched_codes: pl.DataFrame,
+):
+    """`metadata/dataset.json` says the build is enriched, with which rules, and what it added."""
+    dataset, plain = _dataset(enriched_output), _dataset(meds_output)
+    assert "sumeds_enrichment" not in plain
+    assert set(dataset) == {*plain, "sumeds_enrichment"}
+    record = dataset["sumeds_enrichment"]
+    assert record["enriched"] is True
+    assert record["rules"] == "SICdb"
+    assert record["ontology_source"] == "local"
+    assert record["athena"] is False
+
+    def filled(frame: pl.DataFrame, column: str) -> int:
+        return frame[column].drop_nulls().len()
+
+    assert record["coverage"] == {
+        "codes": enriched_codes.height,
+        "described": [
+            filled(codes, "description"),
+            filled(enriched_codes, "description"),
+        ],
+        "with_parent_codes": [
+            filled(codes, "parent_codes"),
+            filled(enriched_codes, "parent_codes"),
+        ],
+    }
+
+
+def test_enrichment_soft_fails_and_suMEDS_enrich_completes_it_later(
+    tmp_path: Path,
+    raw_dir: Path,
+    ontology_source: Path,
+    meds_output: Path,
+    enriched_output: Path,
+    enriched_codes: pl.DataFrame,
+):
+    """With no usable pack source (as on a site without internet), the ETL still succeeds:
+    `codes.parquet` is left exactly as the plain ETL writes it, `dataset.json` records that it is
+    not enriched and how to retry, and `suMEDS-enrich <OUT>` then gives the same table as a run
+    that enriched directly."""
+    empty_source = tmp_path / "no_packs"
+    empty_source.mkdir()
+    output_dir = tmp_path / "MEDS_cohort"
+    stderr = run_command(
+        [
+            "suMEDS-extract",
+            "spec=SICdb",
+            f"output_dir={output_dir}",
+            "do_download=false",
+            f"input_dir={raw_dir}",
+            "--",
+            "--ontology-source",
+            str(empty_source),
+        ]
+    )
+    assert "enrichment failed" in stderr
+    assert f"suMEDS-enrich {output_dir} --ontology-source {empty_source}" in stderr
+
+    codes_fp = output_dir / "metadata" / "codes.parquet"
+    plain_fp = meds_output / "metadata" / "codes.parquet"
+    assert codes_fp.read_bytes() == plain_fp.read_bytes()
+    record = _dataset(output_dir)["sumeds_enrichment"]
+    assert record["enriched"] is False
+    assert record["rules"] == "SICdb"
+    assert record["error"].startswith("OntologyPackError")
+    assert record["retry"] == "suMEDS-enrich <MEDS_ROOT> --ontology-source <PACKS_DIR>"
+
+    run_command(
+        ["suMEDS-enrich", str(output_dir), "--ontology-source", str(ontology_source)]
+    )
+    record = _dataset(output_dir)["sumeds_enrichment"]
+    direct = _dataset(enriched_output)["sumeds_enrichment"]
+    assert record["enriched"] is True
+    assert {k: v for k, v in record.items() if k != "enriched_at"} == {
+        k: v for k, v in direct.items() if k != "enriched_at"
+    }
     assert pl.read_parquet(codes_fp).sort("code").equals(enriched_codes.sort("code"))
