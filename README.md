@@ -26,11 +26,18 @@ pip install SICdb_MEDS
 export DATASET_DOWNLOAD_USERNAME=$PHYSIONET_USERNAME
 export DATASET_DOWNLOAD_PASSWORD=$PHYSIONET_PASSWORD
 
-meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR
+suMEDS-extract spec=SICdb output_dir=$MEDS_COHORT_DIR
 
 # or, if the release is already on disk
-meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR do_download=false input_dir=$RAW_INPUT_DIR
+suMEDS-extract spec=SICdb output_dir=$MEDS_COHORT_DIR do_download=false input_dir=$RAW_INPUT_DIR
 ```
+
+[suMEDS](https://github.com/rvandewater/SumMEDS)' `suMEDS-extract` (installed with this package)
+runs the ETL with `meds-extract-run spec=SICdb`, then adds LOINC names and same-dataset diagnosis
+parents to `metadata/codes.parquet` (see
+[Enriching code metadata with suMEDS](#enriching-code-metadata-with-sumeds)). Arguments before a
+`--` go to `meds-extract-run`, and arguments after it go to `suMEDS-enrich`. For the plain ETL, run
+`meds-extract-run spec=SICdb output_dir=...` with the same arguments.
 
 Waveform extraction is not currently supported; see
 [#1](https://github.com/rvandewater/SICdb_MEDS/issues/1).
@@ -59,7 +66,9 @@ meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR download_key=null input_
 
 There is no wrapper CLI and no pre-MEDS step. Both are gone: the archive is unpacked by the
 download layer, and offsets are resolved to absolute pseudo-timestamps in `_table.cols`. The
-package ships no Python at all -- the whole ETL is `src/SICdb_MEDS/messy.yaml`.
+package ships no Python at all -- the whole ETL is `src/SICdb_MEDS/messy.yaml`. A second entry point
+registers [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml) with suMEDS under
+the same name, which is all `suMEDS-extract spec=SICdb` needs to enrich the output.
 
 ## Code metadata
 
@@ -89,26 +98,53 @@ The ETL writes the vocabulary parents that SICdb records itself:
 
 ## Enriching code metadata with suMEDS
 
-[suMEDS](https://github.com/rvandewater/SumMEDS) adds names and ancestors to those parents from its
-versioned ontology data. It uses the LOINC pack for `LOINC/…`. It has no ICD-10-GM pack, so for
-`ICD10GM/…` it needs an OHDSI Athena download with the vocabulary (`--athena-csv`). This package
-also ships a rules file for what SICdb does not record,
-[`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml) (package data, format
-`sumeds-rules/0.1`). After the ETL, run:
+Vocabulary work lives in [suMEDS](https://github.com/rvandewater/SumMEDS) rather than in this ETL.
+The package ships the rules for it,
+[`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml), registered in suMEDS's
+`sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `SICdb`. That is how
+`suMEDS-extract spec=SICdb` finds them, and `--rules SICdb` works for any suMEDS command.
+`suMEDS-extract` replaces `metadata/codes.parquet` only once the enriched table is complete, and it
+stays valid MEDS code metadata. suMEDS options go after a `--`:
 
 ```bash
-uvx --from "sumeds>=0.4" suMEDS-enrich \
-    $MEDS_COHORT_DIR/metadata/codes.parquet -o codes-enriched.parquet \
-    --rules "$(python -c 'from importlib.resources import files; print(files("SICdb_MEDS") / "sumeds_rules.yaml")')"
+# Also look codes up in your own OHDSI Athena download (the only source for ICD-10-GM):
+suMEDS-extract spec=SICdb output_dir=$MEDS_COHORT_DIR -- --athena-csv /path/to/athena
+# Use only already cached packs (no network):
+suMEDS-extract spec=SICdb output_dir=$MEDS_COHORT_DIR -- --offline
 ```
+
+Running it again on an existing output skips the pipeline stages that are already done and
+enriches again. To enrich the `codes.parquet` of an existing build instead:
+
+```bash
+suMEDS-enrich "$MEDS_COHORT_DIR/metadata/codes.parquet" -o "$MEDS_COHORT_DIR/metadata/codes.parquet" --rules SICdb
+```
+
+The ETL already describes every code, and suMEDS never overwrites a value, so the descriptions stay
+SICdb's own. For SICdb, suMEDS adds:
+
+- **LOINC names.** The `LOINC/…` parents of `LAB//…` codes are looked up in suMEDS's LOINC pack,
+    fetched from GitHub on first use and cached; no Athena download is needed. Each gets its LOINC
+    long common name in `parent_names` (a map from parent code to name), and the lab code gets
+    `vocabulary_id` `LOINC` and its `concept_code`. `--loinc-hierarchy` also adds the LOINC Parts
+    above the term as parents.
+- **ICD-10-GM names**, with `--athena-csv` only. suMEDS has no ICD-10-GM pack, so the
+    `ICD10GM/…` parents of `DIAGNOSIS//ICD10GM//…` codes are resolved only from an Athena download
+    that includes the vocabulary, which also gives the diagnosis codes their OMOP concept fields.
+- **Same-dataset diagnosis parents**, from the one rule of the file:
 
 | Rule                             | Kind                                     | Adds                                                                                                                                                            |
 | -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD10GM//S62.60` gets `DIAGNOSIS//ICD10GM//S62.6`, else `DIAGNOSIS//ICD10GM//S62`) |
 
-Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM/` parent accepts.
-`tests/test_sumeds_rules.py` loads the file with suMEDS and runs the rule, offline, on codes that
-MEDS-Extract renders from `messy.yaml`.
+Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM/` parent accepts. The
+parents the ETL wrote keep their place at the start of `parent_codes`, and the added ones follow. The
+same rules work with `suMEDS … --rules SICdb` to build a privacy-masked code catalog of the output.
+
+`tests/test_sumeds_rules.py` loads the rules by their registered name and runs the rule, offline, on
+codes that MEDS-Extract renders from `messy.yaml`. `tests/test_run_with_enrichment.py` runs
+`suMEDS-extract spec=SICdb` on a small synthetic release (`tests/conftest.py`) with a local LOINC
+pack, and checks that the enrichment keeps every value the ETL wrote.
 
 ## MEDS-transforms settings
 
@@ -138,12 +174,13 @@ export N_SUBJECTS_PER_SHARD=100000
 
 [`tests/regression/full_summary_stats.json`](tests/regression/full_summary_stats.json) is a
 [meds_summary_stats](https://github.com/Medical-Event-Data-Standard/meds_summary_stats) fingerprint of
-the MEDS dataset this ETL builds from the full SICdb 1.0.8 release: subject, event and measurement
-counts, digests of the code vocabulary, per-subject, value and time distributions, code-metadata
-coverage, the splits and the schema. It names no code and reports no cell of fewer than 20 subjects and
-no minimum or maximum, which is what makes it safe to publish. Because it is committed next to the ETL,
-its diff shows what an ETL change did to the output, and two ETL versions can be compared without
-access to the data.
+the MEDS dataset this ETL builds from the full SICdb 1.0.8 release with
+`suMEDS-extract spec=SICdb`, so its code-metadata coverage includes the suMEDS enrichment. It covers
+subject, event and measurement counts, digests of the code vocabulary, per-subject, value and time
+distributions, code-metadata coverage, the splits and the schema. It names no code and reports no
+cell of fewer than 20 subjects and no minimum or maximum, which is what makes it safe to publish.
+Because it is committed next to the ETL, its diff shows what an ETL change did to the output, and two
+ETL versions can be compared without access to the data.
 
 Regenerate it in every pull request that changes the output, from a build of that branch:
 
@@ -159,8 +196,9 @@ Both print how the statistics changed against the committed baseline before over
 [`tests/regression/policy.yaml`](tests/regression/policy.yaml) flags an error. Rebuilding the same
 commit reproduces the baseline exactly, so any finding is a change in the output. CI cannot rebuild the
 credentialed release, so the [Summary stats workflow](.github/workflows/summary-stats.yaml) only warns
-when a pull request changes `src/` without regenerating the baseline. A MEDS-Extract or polars upgrade
-can also move the output, so check it with `--compare`.
+when a pull request changes `src/` (the config or the suMEDS rules) without regenerating the
+baseline. A MEDS-Extract, suMEDS or polars upgrade can also move the output, so check it with
+`--compare`.
 
 ## Development
 
