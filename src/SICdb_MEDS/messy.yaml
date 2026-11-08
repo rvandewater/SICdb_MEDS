@@ -8,7 +8,10 @@
 #
 # Run the whole ETL with:
 #   meds-extract-run spec=SICdb output_dir=$OUTPUT_DIR
-# (see README.md; `SICdb` is registered via the `MEDS_extract.pipelines` entry point).
+# (see README.md; `SICdb` is registered via the `MEDS_extract.pipelines` entry point). That command
+# also enriches `metadata/codes.parquet` with suMEDS, as the `sumeds_enrich` post-stage declared
+# under `etl:` below, using `sumeds_rules.yaml`, registered with suMEDS under the same name.
+# `skip_stages=[sumeds_enrich]` leaves it out.
 
 sources:
   dataset_version: 1.0.8
@@ -24,6 +27,18 @@ sources:
 etl:
   dataset_name: SICdb
   n_subjects_per_shard: 1000
+  # Written to `metadata/dataset.json`, from the release's PhysioNet page. Keep the URI's version
+  # in step with `sources.dataset_version`.
+  license: PhysioNet Contributor Review Health Data License 1.5.0
+  description_uri: https://physionet.org/content/sicdb/1.0.8/
+  # `CaseID` is the release's ICU admission key. Every other extension column is listed under
+  # `other_extension_columns` in `dataset.json`.
+  raw_source_id_columns: [CaseID]
+  # After the canonical stages, suMEDS adds parent codes and names to `metadata/codes.parquet` and
+  # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
+  # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
+  post_stages:
+    - sumeds_enrich: { rules: SICdb }
 
 # `laboratory`, `data_ref`, `data_range` and `data_float_h` carry no PatientID of their own;
 # they pick one up from the `cases` join declared in their `_table.joins` block. `medication`

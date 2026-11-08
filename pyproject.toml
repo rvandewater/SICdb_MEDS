@@ -24,15 +24,16 @@ classifiers = [
 # MEDS-transforms / polars / hydra versions itself. Pinning those here only creates drift -- the
 # stale `MEDS-transforms>=0.6.7,<0.7` made the project unresolvable against meds-extract 0.7.
 # 0.8 is the floor because it renamed the MESSY `_table.join` key to `_table.joins`, which this
-# config uses; 0.7 rejects the new key and 0.8 rejects the old one.
-# suMEDS provides `suMEDS-extract`, which runs this ETL and then enriches its code metadata with
-# the rules registered below. 0.6.1 is the floor because its `suMEDS-extract` soft-fails
-# enrichment (a site without internet still gets its ETL) and records in `metadata/dataset.json`
-# whether the build was enriched; it is capped below the next minor because its rules format and
-# CLI are still 0.x.
+# config uses; 0.7 rejects the new key and 0.8 rejects the old one. 0.8.1 is the floor because it
+# runs the extension stages a spec declares (`etl.post_stages`) and writes the `etl:` descriptors
+# and extension-column categories into `metadata/dataset.json`.
+# suMEDS 0.6.2 registers the `sumeds_enrich` stage the spec declares, which enriches the code
+# metadata with the rules registered below, soft-fails (a site without internet still gets its
+# ETL) and records in `metadata/dataset.json` whether the build was enriched; it is capped below
+# the next minor because its rules format and CLI are still 0.x.
 dependencies = [
-  "MEDS-extract[download]>=0.8.0,<0.9",
-  "sumeds>=0.6.1,<0.7",
+  "MEDS-extract[download]>=0.8.1,<0.9",
+  "sumeds>=0.6.2,<0.7",
 ]
 
 # The whole pipeline is this one data file. setuptools-scm used to ship it implicitly (its git file
@@ -59,7 +60,7 @@ dev = ["pre-commit<4", "pytest", "pytest-cov"]
 [project.entry-points."MEDS_extract.pipelines"]
 SICdb = "SICdb_MEDS:messy.yaml"
 
-# Registers the suMEDS rules under the same name, so `suMEDS-extract spec=SICdb` and
+# Registers the suMEDS rules under the same name, so the spec's `sumeds_enrich` stage and
 # `suMEDS-enrich --rules SICdb` find them.
 [project.entry-points."sumeds.rules"]
 SICdb = "SICdb_MEDS:sumeds_rules.yaml"

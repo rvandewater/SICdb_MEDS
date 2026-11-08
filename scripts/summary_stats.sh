@@ -34,9 +34,8 @@ build() {
   local kind=$1 input=$2 output=$3
   case $kind in
     full)
-      # suMEDS-extract runs meds-extract-run and then the suMEDS enrichment of metadata/codes.parquet,
-      # so the baseline covers the output of the documented one-command build.
-      uv run --frozen suMEDS-extract spec=SICdb do_download=false input_dir="$input" output_dir="$output" >&2 \
+      # The documented one-command build: the ETL, then the spec's suMEDS enrichment stage.
+      uv run --frozen meds-extract-run spec=SICdb do_download=false input_dir="$input" output_dir="$output" >&2 \
         && echo "$output"
       ;;
     *) die "unknown kind '$kind' (expected one of: $KINDS)" ;;
@@ -84,6 +83,13 @@ if [[ -z $meds_dir ]]; then
   meds_dir=$(build "$kind" "$input_dir" "$output_dir")
 fi
 [[ -f $meds_dir/metadata/dataset.json ]] || die "$meds_dir is not a MEDS dataset (no metadata/dataset.json)"
+# The enrichment stage soft-fails (its warning goes only to .logs/pipeline.log), so make sure a baseline
+# covers an enriched build.
+if ! $compare && ! uv run --frozen python -c 'import json, sys
+sys.exit(not json.load(open(sys.argv[1])).get("sumeds_enrichment", {}).get("enriched"))' \
+  "$meds_dir/metadata/dataset.json"; then
+  die "$meds_dir is not enriched (see sumeds_enrichment in its metadata/dataset.json); run \`uv run suMEDS-enrich $meds_dir\` first"
+fi
 echo "Summarizing $meds_dir ($(tr -d '\n' <"$meds_dir/metadata/dataset.json"))" >&2
 
 current=$(mktemp "${TMPDIR:-/tmp}/summary_stats.XXXXXX")

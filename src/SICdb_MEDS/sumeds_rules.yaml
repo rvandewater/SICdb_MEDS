@@ -11,10 +11,10 @@
 # - hierarchy `sicdb-diagnosis-icd10gm-prefix`: a diagnosis code's nearest shorter ICD-10-GM code
 #   that also occurs in the data becomes its parent.
 #
-# `suMEDS-extract spec=SICdb output_dir=$MEDS_DIR ...` runs the ETL and then applies this file;
-# for an existing build:
+# The spec's `sumeds_enrich` post-stage names this file, so `meds-extract-run spec=SICdb
+# output_dir=$MEDS_DIR ...` runs the ETL and then applies it; for an existing build:
 #
-#   suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o $MEDS_DIR/metadata/codes.parquet --rules SICdb
+#   suMEDS-enrich $MEDS_DIR --rules SICdb
 schema: sumeds-rules/0.1
 
 hierarchy:

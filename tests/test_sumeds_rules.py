@@ -91,7 +91,7 @@ def test_rules_are_package_data():
 
 
 def test_rules_are_registered_under_the_pipeline_name():
-    """`suMEDS-extract spec=SICdb` and `--rules SICdb` find the rules by the pipeline's name."""
+    """The spec's `sumeds_enrich` stage and `--rules SICdb` find the rules by the pipeline's name."""
     assert PIPELINE_NAME in registered_rules()
     assert registered_rules()[PIPELINE_NAME] == "SICdb_MEDS:sumeds_rules.yaml"
     by_path = load_rules(Path(str(RULES)))

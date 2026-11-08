@@ -17,6 +17,7 @@ The rows exercise what the code metadata depends on:
 """
 
 import csv
+import os
 import subprocess
 from pathlib import Path
 
@@ -239,29 +240,38 @@ def raw_dir(tmp_path_factory) -> Path:
     return raw_dir
 
 
-def run_command(argv: list[str]) -> str:
-    """Run a CLI, failing the test with its full output if it does not succeed; return its stderr."""
-    result = subprocess.run(argv, capture_output=True, text=True)
-    assert result.returncode == 0, (
-        f"{argv[0]} failed with exit code {result.returncode}.\n"
+def run_command(
+    argv: list[str], env: dict[str, str] | None = None, ok: bool = True
+) -> str:
+    """Run a CLI, failing the test with its full output if it does not succeed (or, with
+    `ok=False`, if it does); return its stderr. `env` is added to the environment."""
+    result = subprocess.run(
+        argv, capture_output=True, text=True, env=os.environ | (env or {})
+    )
+    assert (result.returncode == 0) == ok, (
+        f"{argv[0]} exited with code {result.returncode}.\n"
         f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     )
     return result.stderr
 
 
+def etl_args(output_dir: Path, raw_dir: Path) -> list[str]:
+    """`meds-extract-run` over the synthetic release."""
+    return [
+        "meds-extract-run",
+        "spec=SICdb",
+        f"output_dir={output_dir}",
+        "do_download=false",
+        f"input_dir={raw_dir}",
+    ]
+
+
 @pytest.fixture(scope="session")
 def meds_output(tmp_path_factory, raw_dir: Path) -> Path:
-    """The plain (unenriched) ETL over the synthetic release."""
+    """The plain (unenriched) ETL over the synthetic release: the spec without its suMEDS
+    enrichment stage."""
     output_dir = tmp_path_factory.mktemp("sicdb") / "MEDS_cohort"
-    run_command(
-        [
-            "meds-extract-run",
-            "spec=SICdb",
-            f"output_dir={output_dir}",
-            "do_download=false",
-            f"input_dir={raw_dir}",
-        ]
-    )
+    run_command([*etl_args(output_dir, raw_dir), "skip_stages=[sumeds_enrich]"])
     return output_dir
 
 

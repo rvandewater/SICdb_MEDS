@@ -5,11 +5,9 @@ This package contains no ETL code. The entire pipeline is `messy.yaml`, register
 
     meds-extract-run spec=SICdb output_dir=$OUTPUT_DIR
 
-`sumeds_rules.yaml` is registered under the same name in suMEDS's `sumeds.rules` group, so
-
-    suMEDS-extract spec=SICdb output_dir=$OUTPUT_DIR
-
-runs the same pipeline and then enriches `metadata/codes.parquet` with those rules.
+`sumeds_rules.yaml` is registered under the same name in suMEDS's `sumeds.rules` group, and the
+spec's last stage, suMEDS's `sumeds_enrich`, enriches `metadata/codes.parquet` with those rules;
+`skip_stages=[sumeds_enrich]` leaves it out.
 """
 
 from importlib.metadata import PackageNotFoundError, version
