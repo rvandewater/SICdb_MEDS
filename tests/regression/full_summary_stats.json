@@ -220,13 +220,24 @@
     }
   },
   "dataset": {
-    "created_at": "2026-11-07T19:37:21.949166+00:00",
+    "created_at": "2026-11-08T00:36:10.543691+00:00",
     "dataset_name": "SICdb",
     "dataset_version": "1.0.8:0.1.0",
+    "description_uri": "https://physionet.org/content/sicdb/1.0.8/",
     "etl_name": "MEDS_transforms",
     "etl_version": "0.7.0",
+    "license": "PhysioNet Contributor Review Health Data License 1.5.0",
     "meds_version": "0.4.1",
+    "other_extension_columns": [
+      "source_block",
+      "IsSingleDose",
+      "EventID",
+      "n_samples"
+    ],
     "present": true,
+    "raw_source_id_columns": [
+      "CaseID"
+    ],
     "sumeds_enrichment": {
       "athena": false,
       "coverage": {
@@ -241,7 +252,7 @@
         ]
       },
       "enriched": true,
-      "enriched_at": "2026-11-07T19:37:30Z",
+      "enriched_at": "2026-11-08T00:36:19Z",
       "ontology_source": "rvandewater/sumeds-ontologies@v0.2.0",
       "options": {
         "child_codes": false,
@@ -253,8 +264,8 @@
         "sibling_codes": false
       },
       "rules": "SICdb",
-      "rules_sha256": "ce1766951b56a5fae77c1d22f739276b13500b802b46c73ed24b6ace96abd2e3",
-      "sumeds_version": "0.6.1"
+      "rules_sha256": "64844539b81a40e6bd47beb7dbc3b372e744b270cb9356ab8e4d570afe9cf6c6",
+      "sumeds_version": "0.6.2"
     }
   },
   "dataset_digest": {
@@ -284,7 +295,7 @@
       "data/tuning/1.parquet": "sha256:0e8d9e24b4cade166d4fc11a1a39ef6e8cc66378546472e31ae34ee9851af400",
       "data/tuning/2.parquet": "sha256:b3f6f770b87521a279bfe1c6d156e84c8c54f1690c0a5206d4b06d745ca68889",
       "metadata/codes.parquet": "sha256:60af64f2468611ff20807c0b218dc58c4533d8471edeb5ed3538bb83f470f6d7",
-      "metadata/dataset.json": "sha256:a5002bfbeffc34a491eb4756cd67725198ecdb6b67f050d4a37e27023ab4c2f1",
+      "metadata/dataset.json": "sha256:ec960cb3f95de2ca0dddd09d294650608b5b4d4db7a9c3c0666b801f7834b549",
       "metadata/subject_splits.parquet": "sha256:2db462ae44180a5468a2b2df54641acd7a62f0b119e2b119fa82d7aed9bf4e67"
     },
     "code_metadata": "sha256:a52e34a39a80cc323bfa813d148f8a203f426238a2a4e45ba51d10f921cbfd34",
@@ -293,12 +304,12 @@
       "digest": "sha256:fc698e9a357809555c928639f7a130a42f4f82f86f3500d24abc0c4482807cd0",
       "n_files": 24
     },
-    "dataset_metadata": "sha256:480ba9df178fe94685e85546dd6ee52430cfa7d57b1b57de5a29ac9c7997eacc",
+    "dataset_metadata": "sha256:084892046483c0eb30ed308295bcdac73c56d816759d40b8a5c65e49ec2766ca",
     "method": "files",
     "n_files": 27,
     "subject_splits": "sha256:374779f95392ad46254c7fab3c03493433c1751f9b5082bccff8454c52662b0d"
   },
-  "extracted_at": "2026-11-07T19:37:34.868628",
+  "extracted_at": "2026-11-08T00:36:23.344382",
   "layout": {
     "code_metadata_columns": {
       "category": "List(String)",
