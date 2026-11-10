@@ -261,7 +261,7 @@
     "n_files": 27,
     "subject_splits": "sha256:374779f95392ad46254c7fab3c03493433c1751f9b5082bccff8454c52662b0d"
   },
-  "extracted_at": "2026-11-04T22:17:13.383635",
+  "extracted_at": "2026-11-10T22:15:37.266106",
   "layout": {
     "code_metadata_columns": {
       "category": "List(String)",
@@ -338,8 +338,22 @@
     ],
     "shard_names_digest": "sha256:945670ae881f73b16c70c6d1f8e2f6e6e65c890590186275a907e9e6fdf1aa39"
   },
-  "meds_summary_stats_version": "0.0.3",
+  "meds_summary_stats_version": "0.0.4",
   "per_subject": {
+    "measurements_per_day": {
+      "mean": 146.241,
+      "n": 21566,
+      "quantiles": {
+        "p1": 1.18171,
+        "p25": 43.3562,
+        "p5": 4.11996,
+        "p50": 86.8333,
+        "p75": 178.257,
+        "p95": 494.917,
+        "p99": 977.196
+      },
+      "std": 183.036
+    },
     "n_events": {
       "mean": 368.245,
       "n": 21566,
@@ -417,7 +431,7 @@
     "n_subjects_in_splits_without_data": 0,
     "present": true
   },
-  "stats_schema_version": 1,
+  "stats_schema_version": 2,
   "time": {
     "by_year": {
       "1926": {
