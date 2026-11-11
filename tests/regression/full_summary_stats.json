@@ -1,23 +1,23 @@
 {
   "code_metadata": {
     "description_length": {
-      "mean": 31.9757,
-      "n": 4525,
+      "mean": 32.3919,
+      "n": 4547,
       "quantiles": {
         "p1": 6.0,
         "p25": 13.0,
         "p5": 9.0,
         "p50": 24.0,
         "p75": 45.0,
-        "p95": 81.0,
-        "p99": 109.76
+        "p95": 82.7,
+        "p99": 115.0
       },
-      "std": 24.1805
+      "std": 25.099
     },
     "n_codes": 4547,
     "n_data_codes_missing_from_metadata": 0,
     "n_metadata_codes_absent_from_data": 0,
-    "n_with_description": 4525,
+    "n_with_description": 4547,
     "n_with_parent_codes": 2572,
     "ontology": {
       "by_vocabulary": {
@@ -212,9 +212,9 @@
     }
   },
   "dataset": {
-    "created_at": "2026-11-04T15:29:47.857933+00:00",
+    "created_at": "2026-11-11T00:30:04.705931+00:00",
     "dataset_name": "SICdb",
-    "dataset_version": "1.0.8:0.1.0",
+    "dataset_version": "1.0.8:0.1.1",
     "etl_name": "MEDS_transforms",
     "etl_version": "0.7.0",
     "meds_version": "0.4.1",
@@ -246,22 +246,22 @@
       "data/tuning/0.parquet": "sha256:3c0114d3d4dcb90203274dde2c7e68a2d33c55781c166c4454b687bea60e40ac",
       "data/tuning/1.parquet": "sha256:0e8d9e24b4cade166d4fc11a1a39ef6e8cc66378546472e31ae34ee9851af400",
       "data/tuning/2.parquet": "sha256:b3f6f770b87521a279bfe1c6d156e84c8c54f1690c0a5206d4b06d745ca68889",
-      "metadata/codes.parquet": "sha256:b33fc9ba7501239f36c24138186383edb7c2a91d2c40891bdf144d8fb008c5a2",
-      "metadata/dataset.json": "sha256:dd29db383af625905edf70a14425b81fd4f227e78baa7a79e92dd05b47c37792",
+      "metadata/codes.parquet": "sha256:0238ee22439d6a2ef05630fa2dd5ce6de92216a366a7781124acf31a31a5e438",
+      "metadata/dataset.json": "sha256:189e3794346424d65732914da0f74ea42458d8a2441910c2af63686811999b51",
       "metadata/subject_splits.parquet": "sha256:2db462ae44180a5468a2b2df54641acd7a62f0b119e2b119fa82d7aed9bf4e67"
     },
-    "code_metadata": "sha256:c2c0a452551ececf3eed46e58600f364d8641ce23cbdf106622d5d7141dd6f13",
-    "combined": "sha256:8259c09d011f9ff862c25751f6e59214844bf797fb5551051fcae84c23464ec0",
+    "code_metadata": "sha256:163dafdd0fa260ba59dd249c3594e2d6a64ddc738079779572b3c858f750fcd1",
+    "combined": "sha256:5ac7f9fdf8493654eef3de3e6a61edab6a731401240b56f736f7287b1960bc4f",
     "data": {
       "digest": "sha256:fc698e9a357809555c928639f7a130a42f4f82f86f3500d24abc0c4482807cd0",
       "n_files": 24
     },
-    "dataset_metadata": "sha256:aa11d1db7d712c40d4aa1904b873cbfe597034228cd28855fcc0fb2c6f2f79d9",
+    "dataset_metadata": "sha256:2a242282bd33c60787337f78608b6ec073ba94517392bec8aec84b1cbf379e97",
     "method": "files",
     "n_files": 27,
     "subject_splits": "sha256:374779f95392ad46254c7fab3c03493433c1751f9b5082bccff8454c52662b0d"
   },
-  "extracted_at": "2026-11-10T22:15:37.266106",
+  "extracted_at": "2026-11-11T00:30:30.772606",
   "layout": {
     "code_metadata_columns": {
       "category": "List(String)",
