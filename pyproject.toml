@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "SICdb-MEDS"
 # Static so `uv version --bump <part>` can manage it. Releases tag this exact string (no `v`
 # prefix), and the publish workflow refuses a tag that disagrees. See DEVELOPMENT.md.
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   { name="Robin van de Water", email="robin.vandewater@hpi.de" },
 ]

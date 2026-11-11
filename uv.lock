@@ -850,13 +850,16 @@ wheels = [
 
 [[package]]
 name = "sicdb-meds"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "meds-extract", extra = ["download"] },
 ]
 
 [package.optional-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
 local-parallelism = [
     { name = "hydra-joblib-launcher" },
 ]
@@ -881,11 +884,12 @@ requires-dist = [
     { name = "hydra-joblib-launcher", marker = "extra == 'local-parallelism'" },
     { name = "hydra-submitit-launcher", marker = "extra == 'slurm-parallelism'" },
     { name = "meds-extract", extras = ["download"], specifier = ">=0.8.0,<0.9" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = "<4" },
     { name = "pytest", marker = "extra == 'tests'" },
     { name = "pytest-cov", marker = "extra == 'tests'" },
     { name = "sumeds", marker = "extra == 'tests'", specifier = ">=0.4" },
 ]
-provides-extras = ["tests", "local-parallelism", "slurm-parallelism"]
+provides-extras = ["dev", "tests", "local-parallelism", "slurm-parallelism"]
 
 [package.metadata.requires-dev]
 dev = [
