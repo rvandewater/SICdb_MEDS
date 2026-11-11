@@ -47,9 +47,8 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --locked
-          # MEDS-Extract 0.8 support (the `_table.joins` key this config uses) is on MESSY_synth's
-          # main but in no release yet; pin that commit until one is published.
-          uv pip install "MESSY_synth @ git+https://github.com/mmcdermott/MESSY_synth@ee5b15856971ebea472272b5d6b8457237caaf6c"
+          # MESSY_synth 0.1.0 is the first release that reads MEDS-Extract 0.8 configs.
+          uv pip install "MESSY_synth==0.1.0"
 
       - name: Generate and extract synthetic data
         run: |
