@@ -1,0 +1,64 @@
+name: Synthetic ETL for MESSY files using MESSY_synth
+
+# Generates raw files straight from the shipped MESSY config with MESSY-synth and runs the ETL over
+# them. MESSY-synth validates that every event block yields events and fails the job otherwise, so
+# this catches expressions that only work on the dtypes of one particular release. It complements
+# the hand-written fixtures in tests/, which check specific values.
+#
+# SICdb has no pre-MEDS step: `meds-extract-run spec=SICdb` reads the raw release tables directly,
+# so with `do_download=false` it runs every stage of the spec over the MESSY-synth output, including
+# the `sumeds_enrich` post-stage.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, "release/*", "dev", "feat/*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        # MESSY-synth requires Python >= 3.12.
+        python-version: ["3.12", "3.13"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          uv sync --locked
+          # MEDS-Extract 0.8 support (the `_table.joins` key this config uses) is on MESSY_synth's
+          # main but in no release yet; pin that commit until one is published.
+          uv pip install "MESSY_synth @ git+https://github.com/mmcdermott/MESSY_synth@ee5b15856971ebea472272b5d6b8457237caaf6c"
+
+      - name: Generate and extract synthetic data
+        run: |
+          uv run --no-sync MESSY-synth ./src/SICdb_MEDS/messy.yaml -o raw_synthetic/ --explain
+          uv run --no-sync meds-extract-run spec=SICdb output_dir=./SICdb_meds_synth \
+            input_dir=raw_synthetic do_download=false
+          for f in dataset.json codes.parquet subject_splits.parquet; do
+            test -f "SICdb_meds_synth/metadata/$f"
+          done
+          # The enrichment stage soft-fails, so only check that it ran and recorded its result.
+          jq -e 'has("sumeds_enrichment")' SICdb_meds_synth/metadata/dataset.json
+          jq '.sumeds_enrichment.enriched' SICdb_meds_synth/metadata/dataset.json
