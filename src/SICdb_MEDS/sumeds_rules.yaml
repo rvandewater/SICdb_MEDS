@@ -1,5 +1,6 @@
 # suMEDS enrichment rules for SICdb-MEDS (format `sumeds-rules/0.1`, read by suMEDS >= 0.4;
-# https://github.com/rvandewater/SumMEDS).
+# https://github.com/rvandewater/SumMEDS). pyproject.toml registers this file in suMEDS's
+# `sumeds.rules` entry-point group as `SICdb`, the name of the MEDS-Extract spec.
 #
 # The ETL writes what SICdb itself records: a description for every code, `ICD10GM/<code>`
 # parents for `DIAGNOSIS//ICD10GM//<code>` (cases.ICD10Main) and `LOINC/<code>` parents for
@@ -10,8 +11,10 @@
 # - hierarchy `sicdb-diagnosis-icd10gm-prefix`: a diagnosis code's nearest shorter ICD-10-GM code
 #   that also occurs in the data becomes its parent.
 #
-#   suMEDS-enrich $MEDS_DIR/metadata/codes.parquet -o codes_enriched.parquet \
-#     --rules "$(python -c 'from importlib.resources import files; print(files("SICdb_MEDS") / "sumeds_rules.yaml")')"
+# The spec's `sumeds_enrich` post-stage names this file, so `meds-extract-run spec=SICdb
+# output_dir=$MEDS_DIR ...` runs the ETL and then applies it; for an existing build:
+#
+#   suMEDS-enrich $MEDS_DIR --rules SICdb
 schema: sumeds-rules/0.1
 
 hierarchy:

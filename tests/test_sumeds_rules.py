@@ -1,9 +1,10 @@
 """The packaged suMEDS rules file loads in suMEDS and matches the codes this ETL writes.
 
 suMEDS (https://github.com/rvandewater/SumMEDS) reads `src/SICdb_MEDS/sumeds_rules.yaml` to add
-same-dataset ICD-10-GM parents to `metadata/codes.parquet`. Its strict loader (`sumeds.load_rules`)
-validates the file, and the hierarchy rule runs through suMEDS's own enrichment against an empty
-local ontology source, so nothing is fetched. Every example code is rendered by MEDS-Extract from
+same-dataset ICD-10-GM parents to `metadata/codes.parquet`. The package registers the file in the
+`sumeds.rules` entry-point group under its pipeline name, `SICdb`, and suMEDS's strict loader
+(`sumeds.load_rules("SICdb")`) validates it. The hierarchy rule runs through suMEDS's own
+enrichment against an empty local ontology source, so nothing is fetched. Every example code is rendered by MEDS-Extract from
 the code expressions of `messy.yaml`, so a change to a code layout that breaks a rule fails here.
 All values are made up or public ICD-10 codes.
 """
@@ -15,10 +16,16 @@ from pathlib import Path
 import polars as pl
 import pytest
 from MEDS_extract.config import MessyConfig
-from sumeds import EnrichmentConfig, OntologyRules, enrich_metadata, load_rules
+from sumeds import (
+    EnrichmentConfig,
+    OntologyRules,
+    enrich_metadata,
+    load_rules,
+    registered_rules,
+)
 from sumeds.ontology import INDEX_SCHEMA
 
-from SICdb_MEDS import MESSY_CFG
+from SICdb_MEDS import MESSY_CFG, PIPELINE_NAME
 
 RULES = files("SICdb_MEDS") / "sumeds_rules.yaml"
 
@@ -34,7 +41,8 @@ def cfg() -> MessyConfig:
 
 @pytest.fixture(scope="module")
 def rules() -> OntologyRules:
-    return load_rules(Path(str(RULES)))
+    """The rules, loaded by the name this package registers them under."""
+    return load_rules(PIPELINE_NAME)
 
 
 @pytest.fixture
@@ -80,6 +88,16 @@ def test_rules_are_package_data():
     pyproject = (Path(__file__).parents[1] / "pyproject.toml").read_text()
     assert '"sumeds_rules.yaml"' in pyproject
     assert RULES.is_file()
+
+
+def test_rules_are_registered_under_the_pipeline_name():
+    """The spec's `sumeds_enrich` stage and `--rules SICdb` find the rules by the pipeline's name."""
+    assert PIPELINE_NAME in registered_rules()
+    assert registered_rules()[PIPELINE_NAME] == "SICdb_MEDS:sumeds_rules.yaml"
+    by_path = load_rules(Path(str(RULES)))
+    assert [rule.id for rule in by_path.hierarchy] == [
+        rule.id for rule in load_rules(PIPELINE_NAME).hierarchy
+    ]
 
 
 def test_rules_load_in_sumeds(rules: OntologyRules):

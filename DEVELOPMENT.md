@@ -20,12 +20,18 @@ flags are needed.
 uv run pytest src/ tests/ -v
 ```
 
-The tests parse the bundled config against the installed MEDS-Extract. They need no raw data or
-credentials. CI runs them on Python 3.11 and 3.12.
+The tests parse the bundled config against the installed MEDS-Extract and run it on a small
+synthetic release. They need no raw data, credentials or network. CI runs them on Python 3.11 and
+3.12.
 
 - `tests/test_code_metadata.py` checks that every event block describes its codes.
-- `tests/test_sumeds_rules.py` loads `sumeds_rules.yaml` with suMEDS and runs the rules, offline, on
-    codes that MEDS-Extract renders from the config.
+- `tests/test_sumeds_rules.py` loads `sumeds_rules.yaml` by its registered name, `SICdb`, and runs
+    the rules, offline, on codes that MEDS-Extract renders from the config.
+- `tests/test_run_with_enrichment.py` runs `meds-extract-run spec=SICdb` with its suMEDS
+    enrichment stage on the made-up release of `tests/conftest.py` with a local LOINC pack, and
+    checks that the enrichment keeps every value the plain ETL (`skip_stages=[sumeds_enrich]`)
+    wrote, the soft failure against an empty pack source and its `suMEDS-enrich` retry, and
+    `strict`.
 
 `test_built_codes_metadata` checks a finished build instead. It validates `codes.parquet` against
 the MEDS schema and checks that every code in the data has a description. It reports counts per code
@@ -43,6 +49,9 @@ report aggregate numbers only.
 ```bash
 uv run meds-extract-run spec=SICdb output_dir=$OUT do_download=false input_dir=/path/to/SICdb/1.0.8
 ```
+
+This runs `meds-extract-run` with the same arguments and then enriches `metadata/codes.parquet` with
+the suMEDS rules (see the README). Run `meds-extract-run` instead for the plain ETL.
 
 A full run over release 1.0.8 takes a couple of minutes on a laptop and produces 68,584,759 rows
 over 21,566 subjects.
