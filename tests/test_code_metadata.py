@@ -63,6 +63,16 @@ def test_literal_codes_use_constant_columns(cfg: MessyConfig):
 OUTPUT_DIR = os.environ.get("SICDB_MEDS_OUTPUT_DIR")
 
 
+def test_vitals_weight_and_height_get_loinc_parents(codes: pl.DataFrame):
+    """The config adds LOINC parents for the publicly identified vital DataIDs and for WEIGHT/HEIGHT."""
+    rows = {r["code"]: r for r in codes.to_dicts()}
+    assert rows["VITAL//708"]["parent_codes"] == ["LOINC/8867-4"]
+    # Any other DataID keeps no parent.
+    assert not rows["VITAL//5001"]["parent_codes"]
+    assert rows["WEIGHT"]["parent_codes"] == ["LOINC/29463-7"]
+    assert rows["HEIGHT"]["parent_codes"] == ["LOINC/8302-2"]
+
+
 @pytest.mark.skipif(
     not OUTPUT_DIR, reason="set SICDB_MEDS_OUTPUT_DIR to a finished extraction"
 )

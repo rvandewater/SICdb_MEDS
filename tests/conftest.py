@@ -147,6 +147,8 @@ D_REFERENCES = {
     3120: ("Synthetic AKI stage", "Field", "", "", ""),
     4001: ("Synthetic arterial line", "Device", "", "", ""),
     5001: ("Synthetic heart rate", "SignalFloat", "bpm", "", ""),
+    # 708 is the DataID public sources name for heart rate; the config gives it a LOINC parent.
+    708: ("Synthetic monitor heart rate", "SignalFloat", "/min", "", ""),
 }
 
 LABORATORY = [
@@ -187,6 +189,7 @@ DATA_FLOAT_H = [
     (2, 102, 5001, 3600, 92.0, 58),
     (3, 301, 5001, 7200, 70.0, 60),
     (4, 401, 5001, 3600, 85.0, 60),
+    (5, 101, 708, 7200, 78.0, 60),
 ]
 
 TABLES = {

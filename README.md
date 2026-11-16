@@ -103,6 +103,35 @@ The ETL writes the vocabulary parents that SICdb records itself:
 - `ICD10GM/{ICD10Main}` for a diagnosis with a canonical ICD-10-GM code.
 - `LOINC/{LOINC_code}` for a lab whose `d_references.LOINC_code` is a well-formed LOINC code.
 
+SICdb records no LOINC code for its monitor signals or for weight and height, so the config adds
+these parents itself. Each one comes from a public source:
+
+| Code                       | LOINC parent    | Measures              | DataID source                             |
+| -------------------------- | --------------- | --------------------- | ----------------------------------------- |
+| `VITAL//708`               | `LOINC/8867-4`  | heart rate            | WeavEHR `heart_rate.yml`                  |
+| `VITAL//719`               | `LOINC/9279-1`  | respiratory rate      | WeavEHR `respiratory_rate.yml`            |
+| `VITAL//701`, `VITAL//704` | `LOINC/8480-6`  | systolic pressure     | WeavEHR `systolic_blood_pressure.yml`     |
+| `VITAL//702`, `VITAL//705` | `LOINC/8462-4`  | diastolic pressure    | WeavEHR `diastolic_blood_pressure.yml`    |
+| `VITAL//703`, `VITAL//706` | `LOINC/8478-0`  | mean pressure         | WeavEHR `mean_arterial_pressure.yml`      |
+| `VITAL//709`               | `LOINC/8310-5`  | body temperature      | WeavEHR `temperature.yml`                 |
+| `VITAL//710`               | `LOINC/59408-5` | SpO2 (pulse oximetry) | WeavEHR `oxygen_saturation.yml`           |
+| `VITAL//2283`              | `LOINC/3150-0`  | FiO2                  | WeavEHR `fraction_of_inspired_oxygen.yml` |
+| `VITAL//725`               | `LOINC/9187-6`  | urine output          | WeavEHR `urine_output.yml`                |
+| `WEIGHT`                   | `LOINC/29463-7` | body weight           | `cases.WeightOnAdmission`                 |
+| `HEIGHT`                   | `LOINC/8302-2`  | body height           | `cases.HeightOnAdmission`                 |
+
+- **WeavEHR source.** The WeavEHR files are
+    [aidh-ms/WeavEHR@210a539](https://github.com/aidh-ms/WeavEHR/tree/210a539/configs/datasets/sic/1.0.6/mappings),
+    MIT licensed.
+- **ricu.** ricu's SICdb concepts select the same DataIDs. ricu is GPL-3 and is cited for the ids
+    only. ricu also files DataID 724 under heart rate. Only ricu names it, so it gets no parent here.
+- **LOINC codes.** Every LOINC code above is a standard concept in LOINC 2.80. Only the codes are
+    written here; suMEDS's LOINC pack adds their names. The blood-pressure
+    pairs are an invasive and a non-invasive signal. The generic codes cover both without claiming
+    which signal is which.
+- **Checked.** The medians of every coded signal on the full 1.0.8 release (aggregates only) agree
+    with its parent.
+
 ## Enriching code metadata with suMEDS
 
 Vocabulary work lives in [suMEDS](https://github.com/rvandewater/SumMEDS) rather than in this ETL.
