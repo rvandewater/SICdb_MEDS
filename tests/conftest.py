@@ -138,6 +138,8 @@ D_REFERENCES = {
     ),
     2002: ("Synthetic analyte B", "Laboratory", "mmol/l", "ZL-315", ""),
     2003: ("Synthetic analyte C", "Laboratory", "U/l", "", ""),
+    # A lab item labelled with the body-temperature LOINC: the config withholds that parent.
+    2004: ("Synthetic analyte D", "Laboratory", "", "8310-5", ""),
     2296: ("Arterial", "LaboratoryType", "", "", ""),
     3001: ("Synthetic drug", "Drug", "mg", "", ""),
     3002: ("Synthetic fluid", "Fluid", "ml", "", ""),
@@ -159,6 +161,7 @@ LABORATORY = [
     (4, 201, 2003, 3600, 140.0, ""),
     (5, 301, 2001, 3600, 0.9, ""),
     (6, 401, 2002, 3600, 3.9, ""),
+    (7, 401, 2004, 3600, 55.0, ""),
 ]
 
 MEDICATION = [

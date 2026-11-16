@@ -505,13 +505,21 @@ laboratory:
     # link, so only the 393 that full-match the canonical <digits>-<check digit> shape pass.
     # Those 393 resolve to 371 distinct LOINC concepts (22 LOINCs are each shared by two
     # SICdb analytes), and they land on 419 of the 455 emitted LAB codes.
+    #
+    # One well-formed code is withheld as well: 8310-5 is LOINC's body temperature, a vital sign
+    # and not a laboratory analyte. The one SICdb analyte that carries it (both specimen codes,
+    # 53,809 results) has a median of 55.6 and a 5-95% range of 53.2 to 56.7 on the full 1.0.8
+    # release (aggregates only): no body temperature in any unit. Its description, unit and
+    # loinc_long stay as SICdb records them; only the vocabulary link, which would file these
+    # results under body temperature, is left out. Body temperature comes from VITAL//709.
     _metadata:
       d_references:
         LaboratoryID: $ReferenceGlobalID
         description: $ReferenceValue
         unit: $ReferenceUnit
         loinc_long: $LOINC_long
-        parent_codes: 'f"LOINC/{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code'
+        parent_codes: >-
+          f"LOINC/{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code and $LOINC_code != "8310-5"
 
 # ===========================================================================
 # medication -- 5.1M rows. Carries its own PatientID (100% consistent with cases), so the
