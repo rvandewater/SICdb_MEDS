@@ -138,6 +138,8 @@ D_REFERENCES = {
     ),
     2002: ("Synthetic analyte B", "Laboratory", "mmol/l", "ZL-315", ""),
     2003: ("Synthetic analyte C", "Laboratory", "U/l", "", ""),
+    # A lab item labelled with the body-temperature LOINC: the config withholds that parent.
+    2004: ("Synthetic analyte D", "Laboratory", "", "8310-5", ""),
     2296: ("Arterial", "LaboratoryType", "", "", ""),
     3001: ("Synthetic drug", "Drug", "mg", "", ""),
     3002: ("Synthetic fluid", "Fluid", "ml", "", ""),
@@ -147,6 +149,8 @@ D_REFERENCES = {
     3120: ("Synthetic AKI stage", "Field", "", "", ""),
     4001: ("Synthetic arterial line", "Device", "", "", ""),
     5001: ("Synthetic heart rate", "SignalFloat", "bpm", "", ""),
+    # 708 is the DataID public sources name for heart rate; the config gives it a LOINC parent.
+    708: ("Synthetic monitor heart rate", "SignalFloat", "/min", "", ""),
 }
 
 LABORATORY = [
@@ -157,6 +161,7 @@ LABORATORY = [
     (4, 201, 2003, 3600, 140.0, ""),
     (5, 301, 2001, 3600, 0.9, ""),
     (6, 401, 2002, 3600, 3.9, ""),
+    (7, 401, 2004, 3600, 55.0, ""),
 ]
 
 MEDICATION = [
@@ -187,6 +192,7 @@ DATA_FLOAT_H = [
     (2, 102, 5001, 3600, 92.0, 58),
     (3, 301, 5001, 7200, 70.0, 60),
     (4, 401, 5001, 3600, 85.0, 60),
+    (5, 101, 708, 7200, 78.0, 60),
 ]
 
 TABLES = {

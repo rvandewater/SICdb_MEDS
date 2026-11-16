@@ -328,6 +328,8 @@ cases:
     _metadata:
       _self:
         description: '"Body weight on admission, kg (source is grams, rounded to +-5 kg)"'
+        # LOINC 29463-7: a measured body weight, with no method or timing.
+        parent_codes: '"LOINC/29463-7"'
   height:
     code: '"HEIGHT" if $HeightOnAdmission > 0'
     time: $_adm
@@ -336,6 +338,8 @@ cases:
     _metadata:
       _self:
         description: '"Body height on admission, cm (rounded to +-5 cm)"'
+        # LOINC 8302-2: body height.
+        parent_codes: '"LOINC/8302-2"'
   # SAPS III is scored on the first hour of ICU care, so it belongs at the ICU admission, not
   # at the case admission that may precede it by a surgery. 2 cases score 0, which is below
   # the floor of the instrument and is a missing marker.
@@ -501,13 +505,21 @@ laboratory:
     # link, so only the 393 that full-match the canonical <digits>-<check digit> shape pass.
     # Those 393 resolve to 371 distinct LOINC concepts (22 LOINCs are each shared by two
     # SICdb analytes), and they land on 419 of the 455 emitted LAB codes.
+    #
+    # One well-formed code is withheld as well: 8310-5 is LOINC's body temperature, a vital sign
+    # and not a laboratory analyte. The one SICdb analyte that carries it (both specimen codes,
+    # 53,809 results) has a median of 55.6 and a 5-95% range of 53.2 to 56.7 on the full 1.0.8
+    # release (aggregates only): no body temperature in any unit. Its description, unit and
+    # loinc_long stay as SICdb records them; only the vocabulary link, which would file these
+    # results under body temperature, is left out. Body temperature comes from VITAL//709.
     _metadata:
       d_references:
         LaboratoryID: $ReferenceGlobalID
         description: $ReferenceValue
         unit: $ReferenceUnit
         loinc_long: $LOINC_long
-        parent_codes: 'f"LOINC/{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code'
+        parent_codes: >-
+          f"LOINC/{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code and $LOINC_code != "8310-5"
 
 # ===========================================================================
 # medication -- 5.1M rows. Carries its own PatientID (100% consistent with cases), so the
@@ -696,7 +708,8 @@ data_float_h:
     cols:
       _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
       _t: "$_origin - (-($OffsetAfterFirstAdmission + $Offset))::seconds"
-  # No LOINC parent here: none of the 73 SignalFloat references carries a LOINC_code.
+  # None of the 73 SignalFloat references carries a LOINC_code, so the LOINC parents below are
+  # added here, for the twelve DataIDs that a public source names (see `parent_codes`).
   vital:
     code: 'f"VITAL//{$DataID}"'
     time: $_t
@@ -710,6 +723,33 @@ data_float_h:
         DataID: $ReferenceGlobalID
         description: $ReferenceValue
         unit: $ReferenceUnit
+        # LOINC parents for the vital signs whose DataID is public. The DataIDs are the ones the
+        # WeavEHR SICdb mappings select for each vital sign (aidh-ms/WeavEHR 210a539, MIT,
+        # configs/datasets/sic/1.0.6/mappings/<concept>.yml: heart_rate 708, respiratory_rate
+        # 719, systolic/diastolic/mean_arterial_pressure 701/704, 702/705, 703/706, temperature
+        # 709, oxygen_saturation 710, fraction_of_inspired_oxygen 2283, urine_output 725). ricu's
+        # SICdb concepts (eth-mds/ricu, GPL-3, cited for the ids only) select the same ids, and add
+        # 724 to heart rate, which stays without a parent here because only one source names it.
+        # The LOINC codes are the method-less clinical observations (all standard in LOINC 2.80):
+        # the pressure pairs are an invasive and a non-invasive signal, which the generic codes
+        # cover without claiming which is which.
+        # SpO2 is the monitor's pulse-oximetry signal (59408-5), not the blood-gas saturation
+        # (2708-6) that the laboratory table reports. Checked on the full 1.0.8 release with
+        # aggregates only: every median sits where its parent says (heart rate 80 /min, systolic
+        # 116 and 117 mmHg, temperature 37.1, SpO2 96, FiO2 40, urine 50 per hour). Every other
+        # DataID yields null here and keeps no parent. The id is compared as text: the
+        # d_references key reaches this metadata block as a string column.
+        parent_codes: >-
+          "LOINC/8867-4" if $ReferenceGlobalID::str == "708"
+          else "LOINC/9279-1" if $ReferenceGlobalID::str == "719"
+          else "LOINC/8480-6" if $ReferenceGlobalID::str == "701" or $ReferenceGlobalID::str == "704"
+          else "LOINC/8462-4" if $ReferenceGlobalID::str == "702" or $ReferenceGlobalID::str == "705"
+          else "LOINC/8478-0" if $ReferenceGlobalID::str == "703" or $ReferenceGlobalID::str == "706"
+          else "LOINC/8310-5" if $ReferenceGlobalID::str == "709"
+          else "LOINC/59408-5" if $ReferenceGlobalID::str == "710"
+          else "LOINC/3150-0" if $ReferenceGlobalID::str == "2283"
+          else "LOINC/9187-6" if $ReferenceGlobalID::str == "725"
+
 # ===========================================================================
 # unitlog -- NOT EXTRACTED, on the evidence.
 #
