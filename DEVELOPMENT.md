@@ -1,8 +1,10 @@
 # Development
 
-This package is a pure-config [MEDS-Extract](https://github.com/mmcdermott/MEDS_extract) pipeline.
-The whole ETL is `src/SICdb_MEDS/messy.yaml`, registered under the `MEDS_extract.pipelines` entry
-point as `SICdb`. There is no ETL code to change, only that file.
+This package is a config [MEDS-Extract](https://github.com/mmcdermott/MEDS_extract) pipeline.
+The extraction is `src/SICdb_MEDS/messy.yaml`, registered under the `MEDS_extract.pipelines` entry
+point as `SICdb`. The only code is the `sicdb_collapse_unit_metadata` post-stage
+(`src/SICdb_MEDS/unit_metadata.py`, registered under `MEDS_transforms.stages`), which makes each code's
+`unit` in `metadata/codes.parquet` one String.
 
 ## Setup
 

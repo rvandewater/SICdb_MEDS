@@ -91,6 +91,19 @@ extension column (`n_samples`, ...) under `other_extension_columns`.
     `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
     column.
 
+**Units.** `unit` is a String: the unit of the code's numeric values as recorded, one per code (MEDS
+does not standardise this column). Codes with a `d_references` id (`LAB//…`, `VITAL//…`,
+`MEDICATION//…`, `MEDICATION_RATE//…`, `MEDICATION_END//…`) take it from `ReferenceUnit`, one row per
+id, so one unit per code. The six numeric codes described only in `messy.yaml` carry the unit their
+description states: `WEIGHT` `kg`, `HEIGHT` `cm`, `CRRT_HOURS` `hours`, `HOSPITAL_STAY_DAYS` `days`,
+and `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES` `minutes`. `SAPS3` is a score
+and has none. The `d_references` descriptions state no units (their bracketed parts are never the
+item's `ReferenceUnit`), so no unit is taken from them. MEDS-Extract writes `_metadata` columns as lists
+of the values seen; the first post-stage, `sicdb_collapse_unit_metadata`
+([`src/SICdb_MEDS/unit_metadata.py`](src/SICdb_MEDS/unit_metadata.py)), turns `unit` into one String
+and fails if a code has more than one unit. It also links *unit siblings*, codes that differ only in a
+trailing `//<unit>`, to their stem code; no SICdb code ends with its unit, so there are none.
+
 MEDS-Extract 0.8.0 rejects a `_self` block on a bare literal code (`code: ICU_ADMISSION`). The literal
 codes are therefore read from constant columns of `cases._table.cols`
 (`_code_icu_admission: '"ICU_ADMISSION"'`), and the emitted codes are unchanged. MEDS-Extract 0.8.1
@@ -138,11 +151,13 @@ Vocabulary work lives in [suMEDS](https://github.com/rvandewater/SumMEDS) rather
 The package ships the rules for it,
 [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml), registered in suMEDS's
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `SICdb`, so
-`--rules SICdb` works for any suMEDS command. The spec runs them as its last stage:
+`--rules SICdb` works for any suMEDS command. The spec runs them as its last stage, after
+`sicdb_collapse_unit_metadata`:
 
 ```yaml
 etl:
   post_stages:
+    - sicdb_collapse_unit_metadata
     - sumeds_enrich: {rules: SICdb}
 ```
 

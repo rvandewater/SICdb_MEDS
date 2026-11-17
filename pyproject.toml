@@ -65,6 +65,11 @@ SICdb = "SICdb_MEDS:messy.yaml"
 [project.entry-points."sumeds.rules"]
 SICdb = "SICdb_MEDS:sumeds_rules.yaml"
 
+# The post-stage that makes each code's `unit` one String and links unit siblings; the spec runs it
+# first in `etl.post_stages`.
+[project.entry-points."MEDS_transforms.stages"]
+sicdb_collapse_unit_metadata = "SICdb_MEDS.unit_metadata:main"
+
 [project.urls]
 Homepage = "https://github.com/rvandewater/SICdb_MEDS"
 Issues = "https://github.com/rvandewater/SICdb_MEDS/issues"
