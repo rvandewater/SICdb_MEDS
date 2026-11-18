@@ -60,13 +60,22 @@ def test_literal_codes_use_constant_columns(cfg: MessyConfig):
     assert codes == expected
 
 
-def test_units_are_one_string_per_code(codes: pl.DataFrame):
-    """MEDS-Extract >= 0.9 writes `unit` as one String per code, not a list (MEDS_extract#336)."""
-    assert codes.schema["unit"] == pl.String
-    rows = {r["code"]: r for r in codes.to_dicts()}
-    assert rows["WEIGHT"]["unit"] == "kg"
-    assert rows["HEIGHT"]["unit"] == "cm"
-    assert rows["SAPS3"]["unit"] is None
+def test_built_codes_have_one_string_unit(codes: pl.DataFrame):
+    """On the synthetic build: dictionary units, the literals the descriptions state, and none else.
+
+    MEDS-Extract >= 0.9 writes `unit` as one String per code, not a list (MEDS_extract#336).
+    """
+    assert codes["unit"].dtype == pl.String
+    unit = dict(zip(codes["code"].to_list(), codes["unit"].to_list(), strict=True))
+    assert unit["LAB//2001//UNSPEC"] == "mg/dl"
+    assert unit["VITAL//708"] == "/min"
+    assert unit["MEDICATION//3001"] == "mg"
+    assert (unit["WEIGHT"], unit["HEIGHT"]) == ("kg", "cm")
+    assert unit["HEART_SURGERY_CPB_MINUTES"] == "minutes"
+    assert unit["LAB//2004//UNSPEC"] is None  # no ReferenceUnit
+    assert unit["SAPS3"] is None  # a score
+    # No SICdb code ends with its unit, so there are no unit siblings to link.
+    assert not [c for c, u in unit.items() if u and c.endswith(f"//{u}")]
 
 
 OUTPUT_DIR = os.environ.get("SICDB_MEDS_OUTPUT_DIR")
