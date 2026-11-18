@@ -1,14 +1,13 @@
-"""The SICdb MEDS ETL -- a config MEDS-Extract pipeline.
+"""The SICdb MEDS ETL -- a pure-config MEDS-Extract pipeline.
 
-The extraction is `messy.yaml`, registered under the `MEDS_extract.pipelines` entry-point group, so
-it runs as:
+This package contains no ETL code. The entire pipeline is `messy.yaml`, registered under the
+`MEDS_extract.pipelines` entry-point group, so it runs as:
 
     meds-extract-run spec=SICdb output_dir=$OUTPUT_DIR
 
-The first post-stage, `sicdb_collapse_unit_metadata` (`unit_metadata.py`, the package's only code),
-makes each code's `unit` one String. `sumeds_rules.yaml` is registered under the same name in suMEDS's
-`sumeds.rules` group, and the spec's last stage, suMEDS's `sumeds_enrich`, enriches
-`metadata/codes.parquet` with those rules; `skip_stages=[sumeds_enrich]` leaves it out.
+`sumeds_rules.yaml` is registered under the same name in suMEDS's `sumeds.rules` group, and the
+spec's last stage, suMEDS's `sumeds_enrich`, enriches `metadata/codes.parquet` with those rules;
+`skip_stages=[sumeds_enrich]` leaves it out.
 """
 
 from importlib.metadata import PackageNotFoundError, version

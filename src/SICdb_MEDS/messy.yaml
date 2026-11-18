@@ -1,4 +1,4 @@
-# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.8).
+# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.9).
 #
 # This single file replaces what used to be spread across four places:
 #   - `dataset.yaml`               -> the `sources:` block below
@@ -38,10 +38,6 @@ etl:
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
   post_stages:
-    # Turns the `unit` list MEDS-Extract writes into one String per code (failing if a code has more
-    # than one unit) and links unit siblings (SICdb_MEDS.unit_metadata). First, so that suMEDS
-    # enriches the final set of codes.
-    - sicdb_collapse_unit_metadata
     - sumeds_enrich: { rules: SICdb }
 
 # `laboratory`, `data_ref`, `data_range` and `data_float_h` carry no PatientID of their own;

@@ -60,6 +60,15 @@ def test_literal_codes_use_constant_columns(cfg: MessyConfig):
     assert codes == expected
 
 
+def test_units_are_one_string_per_code(codes: pl.DataFrame):
+    """MEDS-Extract >= 0.9 writes `unit` as one String per code, not a list (MEDS_extract#336)."""
+    assert codes.schema["unit"] == pl.String
+    rows = {r["code"]: r for r in codes.to_dicts()}
+    assert rows["WEIGHT"]["unit"] == "kg"
+    assert rows["HEIGHT"]["unit"] == "cm"
+    assert rows["SAPS3"]["unit"] is None
+
+
 OUTPUT_DIR = os.environ.get("SICDB_MEDS_OUTPUT_DIR")
 
 

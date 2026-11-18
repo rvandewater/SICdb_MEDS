@@ -12,7 +12,7 @@ authors = [
 ]
 description = "An ETL pipeline to extract the Salzburg Intensive Care database (SICdb) into the MEDS format."
 readme = "README.md"
-# Mirrors MEDS-Extract 0.8's own floor and ceiling. A looser range admits interpreters it cannot
+# Mirrors MEDS-Extract 0.9's own floor and ceiling. A looser range admits interpreters it cannot
 # be installed on, and uv then refuses to resolve at all.
 requires-python = ">=3.11.4,<3.14"
 classifiers = [
@@ -26,13 +26,15 @@ classifiers = [
 # 0.8 is the floor because it renamed the MESSY `_table.join` key to `_table.joins`, which this
 # config uses; 0.7 rejects the new key and 0.8 rejects the old one. 0.8.1 is the floor because it
 # runs the extension stages a spec declares (`etl.post_stages`) and writes the `etl:` descriptors
-# and extension-column categories into `metadata/dataset.json`.
+# and extension-column categories into `metadata/dataset.json`. 0.9.0 is the floor because it writes
+# each code's `unit` in `metadata/codes.parquet` as one String and fails on a code with more than one
+# unit (MEDS_extract#336); 0.8.x writes a list of the units seen.
 # suMEDS 0.6.2 registers the `sumeds_enrich` stage the spec declares, which enriches the code
 # metadata with the rules registered below, soft-fails (a site without internet still gets its
 # ETL) and records in `metadata/dataset.json` whether the build was enriched; it is capped below
 # the next minor because its rules format and CLI are still 0.x.
 dependencies = [
-  "MEDS-extract[download]>=0.8.1,<0.9",
+  "MEDS-extract[download]>=0.9.0,<0.10",
   "sumeds>=0.6.2,<0.7",
 ]
 
@@ -64,11 +66,6 @@ SICdb = "SICdb_MEDS:messy.yaml"
 # `suMEDS-enrich --rules SICdb` find them.
 [project.entry-points."sumeds.rules"]
 SICdb = "SICdb_MEDS:sumeds_rules.yaml"
-
-# The post-stage that makes each code's `unit` one String and links unit siblings; the spec runs it
-# first in `etl.post_stages`.
-[project.entry-points."MEDS_transforms.stages"]
-sicdb_collapse_unit_metadata = "SICdb_MEDS.unit_metadata:main"
 
 [project.urls]
 Homepage = "https://github.com/rvandewater/SICdb_MEDS"

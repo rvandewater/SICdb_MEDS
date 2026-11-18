@@ -98,11 +98,10 @@ id, so one unit per code. The six numeric codes described only in `messy.yaml` c
 description states: `WEIGHT` `kg`, `HEIGHT` `cm`, `CRRT_HOURS` `hours`, `HOSPITAL_STAY_DAYS` `days`,
 and `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES` `minutes`. `SAPS3` is a score
 and has none. The `d_references` descriptions state no units (their bracketed parts are never the
-item's `ReferenceUnit`), so no unit is taken from them. MEDS-Extract writes `_metadata` columns as lists
-of the values seen; the first post-stage, `sicdb_collapse_unit_metadata`
-([`src/SICdb_MEDS/unit_metadata.py`](src/SICdb_MEDS/unit_metadata.py)), turns `unit` into one String
-and fails if a code has more than one unit. It also links *unit siblings*, codes that differ only in a
-trailing `//<unit>`, to their stem code; no SICdb code ends with its unit, so there are none.
+item's `ReferenceUnit`), so no unit is taken from them. MEDS-Extract 0.9 and later write `unit` as one
+String per code and fail the build if a code has more than one unit
+([MEDS_extract#336](https://github.com/mmcdermott/MEDS_extract/pull/336)), so the ETL needs no code
+of its own for it.
 
 MEDS-Extract 0.8.0 rejects a `_self` block on a bare literal code (`code: ICU_ADMISSION`). The literal
 codes are therefore read from constant columns of `cases._table.cols`
@@ -151,13 +150,11 @@ Vocabulary work lives in [suMEDS](https://github.com/rvandewater/SumMEDS) rather
 The package ships the rules for it,
 [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml), registered in suMEDS's
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `SICdb`, so
-`--rules SICdb` works for any suMEDS command. The spec runs them as its last stage, after
-`sicdb_collapse_unit_metadata`:
+`--rules SICdb` works for any suMEDS command. The spec runs them as its last stage:
 
 ```yaml
 etl:
   post_stages:
-    - sicdb_collapse_unit_metadata
     - sumeds_enrich: {rules: SICdb}
 ```
 
