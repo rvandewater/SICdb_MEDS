@@ -70,7 +70,7 @@ def test_built_codes_have_one_string_unit(codes: pl.DataFrame):
     assert unit["LAB//2001//UNSPEC"] == "mg/dl"
     assert unit["VITAL//708"] == "/min"
     assert unit["MEDICATION//3001"] == "mg"
-    assert (unit["WEIGHT"], unit["HEIGHT"]) == ("kg", "cm")
+    assert (unit["WEIGHT"], unit["HEIGHT"]) == ("kilogram", "cm")
     assert unit["HEART_SURGERY_CPB_MINUTES"] == "minutes"
     assert unit["LAB//2004//UNSPEC"] is None  # no ReferenceUnit
     assert unit["SAPS3"] is None  # a score

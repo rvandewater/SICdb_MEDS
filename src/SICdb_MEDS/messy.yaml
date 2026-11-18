@@ -329,7 +329,7 @@ cases:
       _self:
         description: '"Body weight on admission, kg (source is grams, rounded to +-5 kg)"'
         # The unit the description states (the value is converted from grams to kg above).
-        unit: '"kg"'
+        unit: '"kilogram"'
         # LOINC 29463-7: a measured body weight, with no method or timing.
         parent_codes: '"LOINC/29463-7"'
   height:
