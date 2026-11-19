@@ -64,18 +64,26 @@ def test_built_codes_have_one_string_unit(codes: pl.DataFrame):
     """On the synthetic build: dictionary units, the literals the descriptions state, and none else.
 
     MEDS-Extract >= 0.9 writes `unit` as one String per code, not a list (MEDS_extract#336).
+    suMEDS's `sumeds_normalize_units` then writes `unit` in UCUM and keeps the spelling as recorded
+    in `unit_source_value`.
     """
     assert codes["unit"].dtype == pl.String
     unit = dict(zip(codes["code"].to_list(), codes["unit"].to_list(), strict=True))
-    assert unit["LAB//2001//UNSPEC"] == "mg/dl"
+    recorded = dict(
+        zip(codes["code"].to_list(), codes["unit_source_value"].to_list(), strict=True)
+    )
+    assert unit["LAB//2001//UNSPEC"] == "mg/dL"
+    assert recorded["LAB//2001//UNSPEC"] == "mg/dl"
+    assert (unit["VITAL//5001"], recorded["VITAL//5001"]) == ("{beats}/min", "bpm")
     assert unit["VITAL//708"] == "/min"
     assert unit["MEDICATION//3001"] == "mg"
-    assert (unit["WEIGHT"], unit["HEIGHT"]) == ("kilogram", "cm")
-    assert unit["HEART_SURGERY_CPB_MINUTES"] == "minutes"
+    assert (unit["WEIGHT"], unit["HEIGHT"]) == ("kg", "cm")
+    assert unit["HEART_SURGERY_CPB_MINUTES"] == "min"
     assert unit["LAB//2004//UNSPEC"] is None  # no ReferenceUnit
     assert unit["SAPS3"] is None  # a score
     # No SICdb code ends with its unit, so there are no unit siblings to link.
     assert not [c for c, u in unit.items() if u and c.endswith(f"//{u}")]
+    assert not [c for c, u in recorded.items() if u and c.endswith(f"//{u}")]
 
 
 OUTPUT_DIR = os.environ.get("SICDB_MEDS_OUTPUT_DIR")

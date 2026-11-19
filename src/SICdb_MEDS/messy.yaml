@@ -38,6 +38,9 @@ etl:
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
   post_stages:
+    # One UCUM spelling for every `unit` (suMEDS's shared table, e.g. `Cel`, `mm[Hg]`, `mg/dL`); the
+    # spelling as recorded stays in `unit_source_value`, and an unknown spelling is kept as it is.
+    - sumeds_normalize_units
     - sumeds_enrich: { rules: SICdb }
 
 # `laboratory`, `data_ref`, `data_range` and `data_float_h` carry no PatientID of their own;
@@ -329,7 +332,7 @@ cases:
       _self:
         description: '"Body weight on admission, kg (source is grams, rounded to +-5 kg)"'
         # The unit the description states (the value is converted from grams to kg above).
-        unit: '"kilogram"'
+        unit: '"kg"'
         # LOINC 29463-7: a measured body weight, with no method or timing.
         parent_codes: '"LOINC/29463-7"'
   height:
@@ -367,7 +370,7 @@ cases:
           "Hours of continuous renal replacement therapy (CRRT) over the case, recorded at the
           case close (cases.HoursOfCRRT; cases without CRRT have no event)"
         # The unit the description (and the column name) states.
-        unit: '"hours"'
+        unit: '"h"'
   # 25 cases have a discharge day but no stay length; without the guard those would emit a
   # HOSPITAL_STAY_DAYS event carrying a null numeric_value, which is a measurement that was
   # never taken. (The other 109 nulls are already dropped by the null `_hospdis`.)
@@ -382,7 +385,7 @@ cases:
           "Length of the hospital stay in days, recorded at the hospital discharge
           (cases.HospitalStayDays)"
         # The unit the description (and the column name) states.
-        unit: '"days"'
+        unit: '"d"'
 
   # ---- Diagnosis -------------------------------------------------------------------------
   # Placed at the case close, not at admission: ICD10Main is the case's coded main diagnosis,
@@ -456,7 +459,7 @@ cases:
           "Cardiopulmonary bypass time of the heart surgery, minutes, recorded at its end
           (cases.HeartSurgeryCPBTime)"
         # The unit the description states.
-        unit: '"minutes"'
+        unit: '"min"'
   heart_surgery_crossclamp_time:
     code: $_code_heart_surgery_crossclamp
     time: $_surg_end
@@ -468,7 +471,7 @@ cases:
           "Cross-clamp time of the heart surgery, minutes, recorded at its end
           (cases.HeartSurgeryCrossClampTime)"
         # The unit the description states.
-        unit: '"minutes"'
+        unit: '"min"'
 
 # ===========================================================================
 # laboratory -- 17.9M rows, the largest table that ships complete in 1.0.8.
