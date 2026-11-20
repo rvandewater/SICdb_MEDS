@@ -82,20 +82,20 @@ extension column (`n_samples`, ...) under `other_extension_columns`.
 `messy.yaml` and comes from SICdb's own tables or its
 [documentation](https://www.sicdb.com/Documentation/Main_Page):
 
-- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION//…`,
+- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION_ADMINISTRATION//…`,
     `CASE_ATTR//…`, `DEVICE//…`, `VITAL//…` and the other `cases` reference columns): the
     `d_references` entry, through a `_metadata` block keyed on the id. Lab codes also get the unit and
     the LOINC long name.
 - `DIAGNOSIS//ICD10GM//…`: `cases.ICD10MainText`.
 - Every other code (`MEDS_BIRTH`, `MEDS_DEATH`, `SEX//…`, `ADMISSION_YEAR//…`, `ICU_ADMISSION`,
-    `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
+    `WEIGHT`, `SAPS3`, `HEART_SURGERY//…`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
     column.
 
 **Units.** `unit` is a String: the unit of the code's numeric values, one per code, written in
 [UCUM](https://ucum.org/) by suMEDS's `sumeds_normalize_units` stage (`mg/dl` becomes `mg/dL`, `bpm`
 becomes `{beats}/min`). The spelling as recorded stays in `unit_source_value`, a spelling suMEDS does
 not know is kept as it is, and the codes keep their names. Codes with a `d_references` id (`LAB//…`,
-`VITAL//…`, `MEDICATION//…`, `MEDICATION_RATE//…`, `MEDICATION_END//…`) take it from `ReferenceUnit`,
+`VITAL//…`, `MEDICATION_ADMINISTRATION//…`, `MEDICATION_RATE//…`) take it from `ReferenceUnit`,
 one row per id, so one unit per code. The six numeric codes described only in `messy.yaml` carry the
 unit their description states, in UCUM: `WEIGHT` `kg`, `HEIGHT` `cm`, `CRRT_HOURS` `h`,
 `HOSPITAL_STAY_DAYS` `d`, and `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES`
@@ -310,6 +310,34 @@ baseline. A MEDS-Extract, suMEDS or polars upgrade can also move the output, so 
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
 process.
+
+## Breaking changes
+
+### Unreleased (after 0.2.0)
+
+- **Intervals are `<FAMILY>//START//…` and `<FAMILY>//END//…`**
+    ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)), the spelling all MEDS ETLs move to
+    for the two ends of an interval, so a start pairs with its end by swapping `START` for `END`. The
+    medication administrations also get the family `MEDICATION_ADMINISTRATION`: with the token in place,
+    `MEDICATION//START` would read as an order, which is what it is in MIMIC-IV, NWICU, PICdb, ALOTT, eICU and
+    CDSL, while SICdb's rows are charted administrations (MC-MED's administrations are
+    `MEDICATION_ADMINISTRATION//…` too). Events, times, values and code metadata are otherwise unchanged.
+    `MEDICATION_RATE//<DrugID>`, `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES` keep their
+    names.
+
+    | Old                        | New                                          |
+    | -------------------------- | -------------------------------------------- |
+    | `MEDICATION//<DrugID>`     | `MEDICATION_ADMINISTRATION//START//<DrugID>` |
+    | `MEDICATION_END//<DrugID>` | `MEDICATION_ADMINISTRATION//END//<DrugID>`   |
+    | `DEVICE//<DataID>//START`  | `DEVICE//START//<DataID>`                    |
+    | `DEVICE//<DataID>//END`    | `DEVICE//END//<DataID>`                      |
+    | `HEART_SURGERY_BEGIN`      | `HEART_SURGERY//START`                       |
+    | `HEART_SURGERY_END`        | `HEART_SURGERY//END`                         |
+
+    To migrate, rewrite old codes with these regexes, in this order: `^MEDICATION_END//` →
+    `MEDICATION_ADMINISTRATION//END//`; `^MEDICATION//` → `MEDICATION_ADMINISTRATION//START//`;
+    `^DEVICE//(.+)//(START|END)$` → `DEVICE//\2//\1`; `^HEART_SURGERY_BEGIN$` → `HEART_SURGERY//START`;
+    `^HEART_SURGERY_END$` → `HEART_SURGERY//END`.
 
 ## Citation
 

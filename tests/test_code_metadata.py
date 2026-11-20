@@ -44,8 +44,8 @@ def test_literal_codes_use_constant_columns(cfg: MessyConfig):
     expected = {
         "death": "MEDS_DEATH",
         "icu_admission": "ICU_ADMISSION",
-        "heart_surgery_begin": "HEART_SURGERY_BEGIN",
-        "heart_surgery_end": "HEART_SURGERY_END",
+        "heart_surgery_begin": "HEART_SURGERY//START",
+        "heart_surgery_end": "HEART_SURGERY//END",
         "heart_surgery_cpb_time": "HEART_SURGERY_CPB_MINUTES",
         "heart_surgery_crossclamp_time": "HEART_SURGERY_CROSSCLAMP_MINUTES",
     }
@@ -76,7 +76,7 @@ def test_built_codes_have_one_string_unit(codes: pl.DataFrame):
     assert recorded["LAB//2001//UNSPEC"] == "mg/dl"
     assert (unit["VITAL//5001"], recorded["VITAL//5001"]) == ("{beats}/min", "bpm")
     assert unit["VITAL//708"] == "/min"
-    assert unit["MEDICATION//3001"] == "mg"
+    assert unit["MEDICATION_ADMINISTRATION//START//3001"] == "mg"
     assert (unit["WEIGHT"], unit["HEIGHT"]) == ("kg", "cm")
     assert unit["HEART_SURGERY_CPB_MINUTES"] == "min"
     assert unit["LAB//2004//UNSPEC"] is None  # no ReferenceUnit

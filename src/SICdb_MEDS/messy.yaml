@@ -157,8 +157,8 @@ cases:
       # literal code (mmcdermott/MEDS_extract#315), and these columns can then go.
       _code_death: '"MEDS_DEATH"'
       _code_icu_admission: '"ICU_ADMISSION"'
-      _code_heart_surgery_begin: '"HEART_SURGERY_BEGIN"'
-      _code_heart_surgery_end: '"HEART_SURGERY_END"'
+      _code_heart_surgery_begin: '"HEART_SURGERY//START"'
+      _code_heart_surgery_end: '"HEART_SURGERY//END"'
       _code_heart_surgery_cpb: '"HEART_SURGERY_CPB_MINUTES"'
       _code_heart_surgery_crossclamp: '"HEART_SURGERY_CROSSCLAMP_MINUTES"'
 
@@ -564,8 +564,13 @@ medication:
   # administration event. d_references splits the 710 DrugIDs into Drug (561), Fluid (137),
   # Food (9) and FoodKcal (3) -- that split rides along as the `category` metadata column so a
   # fluid bolus is still distinguishable from a drug dose.
+  #
+  # An administration is two codes, `MEDICATION_ADMINISTRATION//START//<DrugID>` and
+  # `MEDICATION_ADMINISTRATION//END//<DrugID>`, the spelling the MEDS ETLs move to for the two ends of
+  # an interval (alignEHR#53); swap START for END to pair them. The family says these are charted
+  # administrations: `MEDICATION//START` is an order or prescription in the other ETLs.
   administration:
-    code: 'f"MEDICATION//{$DrugID}" if $Amount > 0'
+    code: 'f"MEDICATION_ADMINISTRATION//START//{$DrugID}" if $Amount > 0'
     time: $_t
     numeric_value: $Amount
     CaseID: $CaseID
@@ -577,7 +582,7 @@ medication:
         unit: $ReferenceUnit
         category: $ReferenceName
   medication_end:
-    code: 'f"MEDICATION_END//{$DrugID}" if $Amount > 0'
+    code: 'f"MEDICATION_ADMINISTRATION//END//{$DrugID}" if $Amount > 0'
     time: $_tend
     CaseID: $CaseID
     EventID: $id
@@ -688,8 +693,9 @@ data_range:
       _origin: '("2017-07-02"::?"%Y-%m-%d")::datetime'
       _t: "$_origin - (-($OffsetAfterFirstAdmission + $Offset))::seconds"
       _tend: "$_origin - (-($OffsetAfterFirstAdmission + $OffsetEnd))::seconds"
+  # A device is two codes, `DEVICE//START//<DataID>` and `DEVICE//END//<DataID>` (alignEHR#53).
   device_start:
-    code: 'f"DEVICE//{$DataID}//START"'
+    code: 'f"DEVICE//START//{$DataID}"'
     time: $_t
     CaseID: $CaseID
     EventID: $id
@@ -699,7 +705,7 @@ data_range:
         description: $ReferenceValue
         category: $ReferenceName
   device_end:
-    code: 'f"DEVICE//{$DataID}//END"'
+    code: 'f"DEVICE//END//{$DataID}"'
     time: $_tend
     CaseID: $CaseID
     EventID: $id
