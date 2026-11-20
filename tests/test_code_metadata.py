@@ -37,8 +37,9 @@ def test_every_event_is_described(cfg: MessyConfig):
     assert not undescribed, f"event blocks without a description: {undescribed}"
 
 
-def test_literal_codes_use_constant_columns(cfg: MessyConfig):
-    """The literal codes described through a constant column keep their exact spelling."""
+def test_literal_codes_keep_their_spelling(cfg: MessyConfig):
+    """The literal codes (plain literals with a `_self` block, MEDS-Extract >= 0.8.1) keep their exact
+    spelling."""
     cases = next(t for t in cfg.event_tables if t.input_prefix == "cases")
     events = {event.name: event for event in cases.events}
     expected = {

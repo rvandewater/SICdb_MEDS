@@ -21,21 +21,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
 
+      # --locked installs the versions in uv.lock (the `dev` group brings pytest and pytest-cov)
+      # and fails if the lock is out of date with pyproject.toml.
       - name: Install packages
         run: |
-          pip install -e .[tests]
+          uv sync --locked
 
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
       - name: Run tests
         run: |
-          pytest src/ tests/ -v --cov=src --junitxml=junit.xml -s
+          uv run --no-sync pytest src/ tests/ -v --cov=src --junitxml=junit.xml -s
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4.0.1

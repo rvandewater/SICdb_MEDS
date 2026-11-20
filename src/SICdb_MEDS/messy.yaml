@@ -150,17 +150,6 @@ cases:
       _dob: "$_origin - ($AgeOnAdmission * 365.25 + 182.625)::days"
       # WeightOnAdmission is GRAMS (median 75,000; "Rounded to +-5kg"), not kg.
       _weight_kg: "$WeightOnAdmission / 1000.0"
-      # Constant code columns. MEDS-Extract 0.8 attaches code metadata only through a code's
-      # components, so a bare literal such as `code: ICU_ADMISSION` cannot carry a `_self`
-      # block; reading the same string from a constant column gives the code one component.
-      # The emitted codes are unchanged. MEDS-Extract's next release accepts `_self` on a
-      # literal code (mmcdermott/MEDS_extract#315), and these columns can then go.
-      _code_death: '"MEDS_DEATH"'
-      _code_icu_admission: '"ICU_ADMISSION"'
-      _code_heart_surgery_begin: '"HEART_SURGERY_BEGIN"'
-      _code_heart_surgery_end: '"HEART_SURGERY_END"'
-      _code_heart_surgery_cpb: '"HEART_SURGERY_CPB_MINUTES"'
-      _code_heart_surgery_crossclamp: '"HEART_SURGERY_CROSSCLAMP_MINUTES"'
 
   # One MEDS_BIRTH per SUBJECT, not per case. AgeOnAdmission is recorded per case and drifts
   # across a patient's cases, so emitting it unguarded would give a 12-case patient 12
@@ -187,7 +176,7 @@ cases:
   # 518 of the 4,142 deaths: OffsetOfDeath is 1-year mortality, so a patient who died >1 y
   # after their first admission but <1 y after a later one is recorded only on the later case.
   death:
-    code: $_code_death
+    code: MEDS_DEATH
     time: $_death
     _metadata:
       _self:
@@ -279,7 +268,7 @@ cases:
         EstimatedSurvivalObservationTime: $ReferenceGlobalID
         description: $ReferenceValue
   icu_admission:
-    code: $_code_icu_admission
+    code: ICU_ADMISSION
     time: $_icu
     CaseID: $CaseID
     _metadata:
@@ -437,7 +426,7 @@ cases:
 
   # ---- Cardiac surgery (8.6% of cases) ----------------------------------------------------
   heart_surgery_begin:
-    code: $_code_heart_surgery_begin
+    code: HEART_SURGERY_BEGIN
     time: $_surg_beg
     CaseID: $CaseID
     _metadata:
@@ -445,7 +434,7 @@ cases:
         description: >-
           "Start of heart surgery (cases.HeartSurgeryBeginOffset after the case admission)"
   heart_surgery_end:
-    code: $_code_heart_surgery_end
+    code: HEART_SURGERY_END
     time: $_surg_end
     CaseID: $CaseID
     _metadata:
@@ -454,7 +443,7 @@ cases:
   # Both are durations in MINUTES, recorded against the operation, so they are stamped at its
   # end. They are non-null on exactly the cardiac-surgery cases.
   heart_surgery_cpb_time:
-    code: $_code_heart_surgery_cpb
+    code: HEART_SURGERY_CPB_MINUTES
     time: $_surg_end
     numeric_value: $HeartSurgeryCPBTime
     CaseID: $CaseID
@@ -466,7 +455,7 @@ cases:
         # The unit the description states.
         unit: '"min"'
   heart_surgery_crossclamp_time:
-    code: $_code_heart_surgery_crossclamp
+    code: HEART_SURGERY_CROSSCLAMP_MINUTES
     time: $_surg_end
     numeric_value: $HeartSurgeryCrossClampTime
     CaseID: $CaseID

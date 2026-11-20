@@ -105,12 +105,11 @@ String per code and fail the build if a code has more than one unit
 ([MEDS_extract#336](https://github.com/mmcdermott/MEDS_extract/pull/336)), so the ETL needs no code
 of its own for it.
 
-MEDS-Extract 0.8.0 rejects a `_self` block on a bare literal code (`code: ICU_ADMISSION`). The literal
-codes are therefore read from constant columns of `cases._table.cols`
-(`_code_icu_admission: '"ICU_ADMISSION"'`), and the emitted codes are unchanged. MEDS-Extract 0.8.1
-accepts `_self` on a literal code
-([MEDS_extract#315](https://github.com/mmcdermott/MEDS_extract/pull/315)), so these can become literals
-again.
+The constant codes (`MEDS_DEATH`, `ICU_ADMISSION`, `HEART_SURGERY_BEGIN`, `HEART_SURGERY_END`,
+`HEART_SURGERY_CPB_MINUTES`, `HEART_SURGERY_CROSSCLAMP_MINUTES`) are plain literals
+(`code: ICU_ADMISSION`) with a `_self` block: MEDS-Extract 0.8.1 and later accept `_self` on a literal
+code ([MEDS_extract#315](https://github.com/mmcdermott/MEDS_extract/pull/315)), and their
+`code_template` is the code itself.
 
 The ETL writes the vocabulary parents that SICdb records itself:
 
