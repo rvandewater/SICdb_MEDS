@@ -86,7 +86,7 @@ extension column (`n_samples`, ...) under `other_extension_columns`.
     `CASE_ATTR//…`, `DEVICE//…`, `VITAL//…` and the other `cases` reference columns): the
     `d_references` entry, through a `_metadata` block keyed on the id. Lab codes also get the unit and
     the LOINC long name.
-- `DIAGNOSIS//ICD10GM//…`: `cases.ICD10MainText`.
+- `DIAGNOSIS//ICD//10GM//…`: `cases.ICD10MainText`.
 - Every other code (`MEDS_BIRTH`, `MEDS_DEATH`, `SEX//…`, `ADMISSION_YEAR//…`, `ICU_ADMISSION`,
     `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
     column.
@@ -231,13 +231,13 @@ SICdb's own. For SICdb, suMEDS adds:
     `vocabulary_id` `LOINC` and its `concept_code`. The stage option `loinc_hierarchy`
     (`--loinc-hierarchy` for `suMEDS-enrich`) also adds the LOINC Parts above the term as parents.
 - **ICD-10-GM names**, with an Athena download (`athena_csv`) only. suMEDS has no ICD-10-GM pack, so the
-    `ICD10GM//…` parents of `DIAGNOSIS//ICD10GM//…` codes are resolved only from an Athena download
+    `ICD10GM//…` parents of `DIAGNOSIS//ICD//10GM//…` codes are resolved only from an Athena download
     that includes the vocabulary, which also gives the diagnosis codes their OMOP concept fields.
 - **Same-dataset diagnosis parents**, from the one rule of the file:
 
-| Rule                             | Kind                                     | Adds                                                                                                                                                            |
-| -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD10GM//S62.60` gets `DIAGNOSIS//ICD10GM//S62.6`, else `DIAGNOSIS//ICD10GM//S62`) |
+| Rule                             | Kind                                     | Adds                                                                                                                                                                  |
+| -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD//10GM//S62.60` gets `DIAGNOSIS//ICD//10GM//S62.6`, else `DIAGNOSIS//ICD//10GM//S62`) |
 
 Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM//` parent accepts. The
 parents the ETL wrote keep their place at the start of `parent_codes`, and the added ones follow. The
@@ -320,6 +320,11 @@ process.
     spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
     migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
     already read both spellings as the same parent.
+- **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
+    `DIAGNOSIS//ICD10GM//<code>` are now `DIAGNOSIS//ICD//10GM//<code>`, the layout every MEDS ETL
+    of this family uses for ICD (`ICD//10CM`, `ICD//9CM`, `ICD//10PCS`, `ICD//10CN`, ...). The code
+    after the edition is unchanged (dotted, as SICdb records it), and so is its `ICD10GM//<code>`
+    parent. To migrate, rename codes with the regex `^DIAGNOSIS//ICD10GM//` → `DIAGNOSIS//ICD//10GM//`.
 
 ## Citation
 
