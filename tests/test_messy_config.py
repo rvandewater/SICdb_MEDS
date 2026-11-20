@@ -124,7 +124,7 @@ def test_physionet_source_declares_unarchive(cfg: MessyConfig, dummy_credentials
 
 def test_etl_block(cfg: MessyConfig):
     """The reserved `etl:` block carries the dataset identity, stage options, the `dataset.json`
-    descriptors and the suMEDS enrichment stage that runs after the ETL."""
+    descriptors and the suMEDS stages that run after the ETL: UCUM units, then enrichment."""
     assert cfg.etl.dataset_name == "SICdb"
     options = cfg.etl.stage_options
     assert options["n_subjects_per_shard"] == 1000
@@ -135,7 +135,9 @@ def test_etl_block(cfg: MessyConfig):
         f"https://physionet.org/content/sicdb/{cfg.sources_version}/"
     )
     assert [(s.name, s.options) for s in cfg.etl.post_stages] == [
-        ("sumeds_enrich", {"rules": PIPELINE_NAME})
+        ("sumeds_link_unit_siblings", {}),
+        ("sumeds_normalize_units", {}),
+        ("sumeds_enrich", {"rules": PIPELINE_NAME}),
     ]
 
 

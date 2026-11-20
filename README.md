@@ -91,6 +91,20 @@ extension column (`n_samples`, ...) under `other_extension_columns`.
     `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
     column.
 
+**Units.** `unit` is a String: the unit of the code's numeric values, one per code, written in
+[UCUM](https://ucum.org/) by suMEDS's `sumeds_normalize_units` stage (`mg/dl` becomes `mg/dL`, `bpm`
+becomes `{beats}/min`). The spelling as recorded stays in `unit_source_value`, a spelling suMEDS does
+not know is kept as it is, and the codes keep their names. Codes with a `d_references` id (`LAB//…`,
+`VITAL//…`, `MEDICATION//…`, `MEDICATION_RATE//…`, `MEDICATION_END//…`) take it from `ReferenceUnit`,
+one row per id, so one unit per code. The six numeric codes described only in `messy.yaml` carry the
+unit their description states, in UCUM: `WEIGHT` `kg`, `HEIGHT` `cm`, `CRRT_HOURS` `h`,
+`HOSPITAL_STAY_DAYS` `d`, and `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES`
+`min`. `SAPS3` is a score and has none. The `d_references` descriptions state no units (their bracketed parts are never the
+item's `ReferenceUnit`), so no unit is taken from them. MEDS-Extract 0.9 and later write `unit` as one
+String per code and fail the build if a code has more than one unit
+([MEDS_extract#336](https://github.com/mmcdermott/MEDS_extract/pull/336)), so the ETL needs no code
+of its own for it.
+
 MEDS-Extract 0.8.0 rejects a `_self` block on a bare literal code (`code: ICU_ADMISSION`). The literal
 codes are therefore read from constant columns of `cases._table.cols`
 (`_code_icu_admission: '"ICU_ADMISSION"'`), and the emitted codes are unchanged. MEDS-Extract 0.8.1
@@ -138,11 +152,17 @@ Vocabulary work lives in [suMEDS](https://github.com/rvandewater/SumMEDS) rather
 The package ships the rules for it,
 [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml), registered in suMEDS's
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `SICdb`, so
-`--rules SICdb` works for any suMEDS command. The spec runs them as its last stage:
+`--rules SICdb` works for any suMEDS command. The spec runs them as its last stage, after suMEDS's
+[`sumeds_link_unit_siblings`](https://github.com/rvandewater/suMEDS/blob/main/docs/unit_siblings.md),
+which links codes that differ only in their unit (SICdb has none: each `d_references` id has one
+unit, so it changes nothing today, but the post-stages are the same as in the other MEDS ETLs), and
+`sumeds_normalize_units`, which writes `unit` in UCUM (see **Units** above):
 
 ```yaml
 etl:
   post_stages:
+    - sumeds_link_unit_siblings
+    - sumeds_normalize_units
     - sumeds_enrich: {rules: SICdb}
 ```
 

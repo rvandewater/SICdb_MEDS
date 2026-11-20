@@ -1,4 +1,4 @@
-# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.8).
+# MESSY config for the SICdb MEDS ETL (MEDS-Extract >= 0.9).
 #
 # This single file replaces what used to be spread across four places:
 #   - `dataset.yaml`               -> the `sources:` block below
@@ -38,6 +38,14 @@ etl:
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
   post_stages:
+    # Codes that differ only in their last `//<unit>` part get the code without it as a parent, with
+    # a row of its own (suMEDS's docs/unit_siblings.md, default options). SICdb has no such codes
+    # (each `d_references` id has one unit), so this changes nothing today; it runs, as in the other
+    # MEDS ETLs, before unit normalisation and the enrichment.
+    - sumeds_link_unit_siblings
+    # One UCUM spelling for every `unit` (suMEDS's shared table, e.g. `Cel`, `mm[Hg]`, `mg/dL`); the
+    # spelling as recorded stays in `unit_source_value`, and an unknown spelling is kept as it is.
+    - sumeds_normalize_units
     - sumeds_enrich: { rules: SICdb }
 
 # `laboratory`, `data_ref`, `data_range` and `data_float_h` carry no PatientID of their own;
@@ -328,6 +336,8 @@ cases:
     _metadata:
       _self:
         description: '"Body weight on admission, kg (source is grams, rounded to +-5 kg)"'
+        # The unit the description states (the value is converted from grams to kg above).
+        unit: '"kg"'
         # LOINC 29463-7: a measured body weight, with no method or timing.
         parent_codes: '"LOINC/29463-7"'
   height:
@@ -338,6 +348,8 @@ cases:
     _metadata:
       _self:
         description: '"Body height on admission, cm (rounded to +-5 cm)"'
+        # The unit the description states.
+        unit: '"cm"'
         # LOINC 8302-2: body height.
         parent_codes: '"LOINC/8302-2"'
   # SAPS III is scored on the first hour of ICU care, so it belongs at the ICU admission, not
@@ -362,6 +374,8 @@ cases:
         description: >-
           "Hours of continuous renal replacement therapy (CRRT) over the case, recorded at the
           case close (cases.HoursOfCRRT; cases without CRRT have no event)"
+        # The unit the description (and the column name) states.
+        unit: '"h"'
   # 25 cases have a discharge day but no stay length; without the guard those would emit a
   # HOSPITAL_STAY_DAYS event carrying a null numeric_value, which is a measurement that was
   # never taken. (The other 109 nulls are already dropped by the null `_hospdis`.)
@@ -375,6 +389,8 @@ cases:
         description: >-
           "Length of the hospital stay in days, recorded at the hospital discharge
           (cases.HospitalStayDays)"
+        # The unit the description (and the column name) states.
+        unit: '"d"'
 
   # ---- Diagnosis -------------------------------------------------------------------------
   # Placed at the case close, not at admission: ICD10Main is the case's coded main diagnosis,
@@ -447,6 +463,8 @@ cases:
         description: >-
           "Cardiopulmonary bypass time of the heart surgery, minutes, recorded at its end
           (cases.HeartSurgeryCPBTime)"
+        # The unit the description states.
+        unit: '"min"'
   heart_surgery_crossclamp_time:
     code: $_code_heart_surgery_crossclamp
     time: $_surg_end
@@ -457,6 +475,8 @@ cases:
         description: >-
           "Cross-clamp time of the heart surgery, minutes, recorded at its end
           (cases.HeartSurgeryCrossClampTime)"
+        # The unit the description states.
+        unit: '"min"'
 
 # ===========================================================================
 # laboratory -- 17.9M rows, the largest table that ships complete in 1.0.8.
