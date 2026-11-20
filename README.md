@@ -319,7 +319,7 @@ process.
 
 ## Breaking changes
 
-### Unreleased
+### Unreleased (after 0.2.0)
 
 - **`CaseID` is renamed `icustay_id`.** The column holds the same value as before, `cases.CaseID`
     (one ICU admission), on the same events, and is still the one `raw_source_id_columns` entry in
