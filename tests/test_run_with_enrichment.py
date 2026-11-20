@@ -179,12 +179,12 @@ def test_diagnoses_get_same_dataset_parents(enriched_codes: pl.DataFrame):
         for code in ["S62", "S62.6", "S62.60", "E11.9", "C19.x1"]
     }
     assert parents == {
-        "S62": ["ICD10GM/S62"],
-        # The ETL's ICD10GM/ parent first, then the nearest shorter code in the data.
-        "S62.6": ["ICD10GM/S62.6", "DIAGNOSIS//ICD10GM//S62"],
-        "S62.60": ["ICD10GM/S62.60", "DIAGNOSIS//ICD10GM//S62.6"],
+        "S62": ["ICD10GM//S62"],
+        # The ETL's ICD10GM// parent first, then the nearest shorter code in the data.
+        "S62.6": ["ICD10GM//S62.6", "DIAGNOSIS//ICD10GM//S62"],
+        "S62.60": ["ICD10GM//S62.60", "DIAGNOSIS//ICD10GM//S62.6"],
         # E11 does not occur, and a non-canonical code takes no part.
-        "E11.9": ["ICD10GM/E11.9"],
+        "E11.9": ["ICD10GM//E11.9"],
         "C19.x1": None,
     }
     # Without an ICD-10-GM source, nothing is named: same-dataset parents are described in their
@@ -199,8 +199,8 @@ def test_loinc_parents_get_their_names(enriched_codes: pl.DataFrame):
         assert (
             lab["description"] == "Synthetic analyte A"
         )  # d_references, not the LOINC title
-        assert lab["parent_codes"] == ["LOINC/2160-0"]
-        assert names(lab["parent_names"]) == {"LOINC/2160-0": LOINC_TITLES["2160-0"]}
+        assert lab["parent_codes"] == ["LOINC//2160-0"]
+        assert names(lab["parent_names"]) == {"LOINC//2160-0": LOINC_TITLES["2160-0"]}
         assert (lab["vocabulary_id"], lab["concept_code"]) == ("LOINC", "2160-0")
 
     # A local id in d_references.LOINC_code is no LOINC parent, so there is nothing to look up.

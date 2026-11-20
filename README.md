@@ -114,25 +114,25 @@ again.
 
 The ETL writes the vocabulary parents that SICdb records itself:
 
-- `ICD10GM/{ICD10Main}` for a diagnosis with a canonical ICD-10-GM code.
-- `LOINC/{LOINC_code}` for a lab whose `d_references.LOINC_code` is a well-formed LOINC code.
+- `ICD10GM//{ICD10Main}` for a diagnosis with a canonical ICD-10-GM code.
+- `LOINC//{LOINC_code}` for a lab whose `d_references.LOINC_code` is a well-formed LOINC code.
 
 SICdb records no LOINC code for its monitor signals or for weight and height, so the config adds
 these parents itself. Each one comes from a public source:
 
-| Code                       | LOINC parent    | Measures              | DataID source                             |
-| -------------------------- | --------------- | --------------------- | ----------------------------------------- |
-| `VITAL//708`               | `LOINC/8867-4`  | heart rate            | WeavEHR `heart_rate.yml`                  |
-| `VITAL//719`               | `LOINC/9279-1`  | respiratory rate      | WeavEHR `respiratory_rate.yml`            |
-| `VITAL//701`, `VITAL//704` | `LOINC/8480-6`  | systolic pressure     | WeavEHR `systolic_blood_pressure.yml`     |
-| `VITAL//702`, `VITAL//705` | `LOINC/8462-4`  | diastolic pressure    | WeavEHR `diastolic_blood_pressure.yml`    |
-| `VITAL//703`, `VITAL//706` | `LOINC/8478-0`  | mean pressure         | WeavEHR `mean_arterial_pressure.yml`      |
-| `VITAL//709`               | `LOINC/8310-5`  | body temperature      | WeavEHR `temperature.yml`                 |
-| `VITAL//710`               | `LOINC/59408-5` | SpO2 (pulse oximetry) | WeavEHR `oxygen_saturation.yml`           |
-| `VITAL//2283`              | `LOINC/3150-0`  | FiO2                  | WeavEHR `fraction_of_inspired_oxygen.yml` |
-| `VITAL//725`               | `LOINC/9187-6`  | urine output          | WeavEHR `urine_output.yml`                |
-| `WEIGHT`                   | `LOINC/29463-7` | body weight           | `cases.WeightOnAdmission`                 |
-| `HEIGHT`                   | `LOINC/8302-2`  | body height           | `cases.HeightOnAdmission`                 |
+| Code                       | LOINC parent     | Measures              | DataID source                             |
+| -------------------------- | ---------------- | --------------------- | ----------------------------------------- |
+| `VITAL//708`               | `LOINC//8867-4`  | heart rate            | WeavEHR `heart_rate.yml`                  |
+| `VITAL//719`               | `LOINC//9279-1`  | respiratory rate      | WeavEHR `respiratory_rate.yml`            |
+| `VITAL//701`, `VITAL//704` | `LOINC//8480-6`  | systolic pressure     | WeavEHR `systolic_blood_pressure.yml`     |
+| `VITAL//702`, `VITAL//705` | `LOINC//8462-4`  | diastolic pressure    | WeavEHR `diastolic_blood_pressure.yml`    |
+| `VITAL//703`, `VITAL//706` | `LOINC//8478-0`  | mean pressure         | WeavEHR `mean_arterial_pressure.yml`      |
+| `VITAL//709`               | `LOINC//8310-5`  | body temperature      | WeavEHR `temperature.yml`                 |
+| `VITAL//710`               | `LOINC//59408-5` | SpO2 (pulse oximetry) | WeavEHR `oxygen_saturation.yml`           |
+| `VITAL//2283`              | `LOINC//3150-0`  | FiO2                  | WeavEHR `fraction_of_inspired_oxygen.yml` |
+| `VITAL//725`               | `LOINC//9187-6`  | urine output          | WeavEHR `urine_output.yml`                |
+| `WEIGHT`                   | `LOINC//29463-7` | body weight           | `cases.WeightOnAdmission`                 |
+| `HEIGHT`                   | `LOINC//8302-2`  | body height           | `cases.HeightOnAdmission`                 |
 
 - **WeavEHR source.** The WeavEHR files are
     [aidh-ms/WeavEHR@210a539](https://github.com/aidh-ms/WeavEHR/tree/210a539/configs/datasets/sic/1.0.6/mappings),
@@ -225,13 +225,13 @@ meds-extract-run spec=SICdb output_dir=$MEDS_COHORT_DIR "overrides=['++stage_cfg
 The ETL already describes every code, and suMEDS never overwrites a value, so the descriptions stay
 SICdb's own. For SICdb, suMEDS adds:
 
-- **LOINC names.** The `LOINC/…` parents of `LAB//…` codes are looked up in suMEDS's LOINC pack,
+- **LOINC names.** The `LOINC//…` parents of `LAB//…` codes are looked up in suMEDS's LOINC pack,
     fetched from GitHub on first use and cached; no Athena download is needed. Each gets its LOINC
     long common name in `parent_names` (a map from parent code to name), and the lab code gets
     `vocabulary_id` `LOINC` and its `concept_code`. The stage option `loinc_hierarchy`
     (`--loinc-hierarchy` for `suMEDS-enrich`) also adds the LOINC Parts above the term as parents.
 - **ICD-10-GM names**, with an Athena download (`athena_csv`) only. suMEDS has no ICD-10-GM pack, so the
-    `ICD10GM/…` parents of `DIAGNOSIS//ICD10GM//…` codes are resolved only from an Athena download
+    `ICD10GM//…` parents of `DIAGNOSIS//ICD10GM//…` codes are resolved only from an Athena download
     that includes the vocabulary, which also gives the diagnosis codes their OMOP concept fields.
 - **Same-dataset diagnosis parents**, from the one rule of the file:
 
@@ -239,7 +239,7 @@ SICdb's own. For SICdb, suMEDS adds:
 | -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD10GM//S62.60` gets `DIAGNOSIS//ICD10GM//S62.6`, else `DIAGNOSIS//ICD10GM//S62`) |
 
-Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM/` parent accepts. The
+Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM//` parent accepts. The
 parents the ETL wrote keep their place at the start of `parent_codes`, and the added ones follow. The
 same rules work with `suMEDS … --rules SICdb` to build a privacy-masked code catalog of the output.
 
@@ -310,6 +310,16 @@ baseline. A MEDS-Extract, suMEDS or polars upgrade can also move the output, so 
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
 process.
+
+## Breaking changes
+
+### Unreleased (after 0.2.0)
+
+- **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
+    (`ICD10GM`, `LOINC`) used one slash, `LOINC/2160-0`; they now use two, `LOINC//2160-0`, the
+    spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
+    migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
+    already read both spellings as the same parent.
 
 ## Citation
 
