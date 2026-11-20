@@ -154,14 +154,17 @@ The package ships the rules for it,
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `SICdb`, so
 `--rules SICdb` works for any suMEDS command. The spec runs them as its last stage, after suMEDS's
 [`sumeds_link_unit_siblings`](https://github.com/rvandewater/suMEDS/blob/main/docs/unit_siblings.md),
-which links codes that differ only in their unit (SICdb has none: each `d_references` id has one
-unit, so it changes nothing today, but the post-stages are the same as in the other MEDS ETLs), and
+which links codes that differ only in their unit, and with `link_single_units: true` also a code
+ending in its unit when its item has one (SICdb has neither: each `d_references` id has one
+unit and no code ends in it, so it changes nothing today, but the post-stages are the same as in the
+other MEDS ETLs), and
 `sumeds_normalize_units`, which writes `unit` in UCUM (see **Units** above):
 
 ```yaml
 etl:
   post_stages:
-    - sumeds_link_unit_siblings
+    - sumeds_link_unit_siblings:
+        link_single_units: true
     - sumeds_normalize_units
     - sumeds_enrich: {rules: SICdb}
 ```
