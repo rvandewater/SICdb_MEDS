@@ -175,21 +175,21 @@ def test_enrichment_keeps_the_etl_metadata(
 def test_diagnoses_get_same_dataset_parents(enriched_codes: pl.DataFrame):
     rows = {r["code"]: r for r in enriched_codes.to_dicts()}
     parents = {
-        code: rows[f"DIAGNOSIS//ICD10GM//{code}"]["parent_codes"]
+        code: rows[f"DIAGNOSIS//ICD//10GM//{code}"]["parent_codes"]
         for code in ["S62", "S62.6", "S62.60", "E11.9", "C19.x1"]
     }
     assert parents == {
         "S62": ["ICD10GM//S62"],
         # The ETL's ICD10GM// parent first, then the nearest shorter code in the data.
-        "S62.6": ["ICD10GM//S62.6", "DIAGNOSIS//ICD10GM//S62"],
-        "S62.60": ["ICD10GM//S62.60", "DIAGNOSIS//ICD10GM//S62.6"],
+        "S62.6": ["ICD10GM//S62.6", "DIAGNOSIS//ICD//10GM//S62"],
+        "S62.60": ["ICD10GM//S62.60", "DIAGNOSIS//ICD//10GM//S62.6"],
         # E11 does not occur, and a non-canonical code takes no part.
         "E11.9": ["ICD10GM//E11.9"],
         "C19.x1": None,
     }
     # Without an ICD-10-GM source, nothing is named: same-dataset parents are described in their
     # own rows.
-    assert not names(rows["DIAGNOSIS//ICD10GM//S62.60"]["parent_names"])
+    assert not names(rows["DIAGNOSIS//ICD//10GM//S62.60"]["parent_names"])
 
 
 def test_loinc_parents_get_their_names(enriched_codes: pl.DataFrame):
