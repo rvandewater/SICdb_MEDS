@@ -9,7 +9,7 @@ dataset; the reference ids, codes and texts are invented.
 The rows exercise what the code metadata depends on:
 
 - diagnoses `S62`, `S62.6` and `S62.60` (a prefix chain), `E11.9` (whose shorter code does not
-  occur) and the non-canonical `C19.x1`, which gets no `ICD10GM/` parent;
+  occur) and the non-canonical `C19.x1`, which gets no `ICD10GM//` parent;
 - one analyte with a canonical LOINC code, one whose `LOINC_code` is a local id (`ZL-315`) and
   one without, plus an arterial blood-gas measurement of the first;
 - the guards of the config: a 0 weight and height, an Amount of 0, a case without a hospital

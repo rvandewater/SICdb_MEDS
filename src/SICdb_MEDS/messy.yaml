@@ -339,7 +339,7 @@ cases:
         # The unit the description states (the value is converted from grams to kg above).
         unit: '"kg"'
         # LOINC 29463-7: a measured body weight, with no method or timing.
-        parent_codes: '"LOINC/29463-7"'
+        parent_codes: '"LOINC//29463-7"'
   height:
     code: '"HEIGHT" if $HeightOnAdmission > 0'
     time: $_adm
@@ -351,7 +351,7 @@ cases:
         # The unit the description states.
         unit: '"cm"'
         # LOINC 8302-2: body height.
-        parent_codes: '"LOINC/8302-2"'
+        parent_codes: '"LOINC//8302-2"'
   # SAPS III is scored on the first hour of ICU care, so it belongs at the ICU admission, not
   # at the case admission that may precede it by a surgery. 2 cases score 0, which is below
   # the floor of the instrument and is a missing marker.
@@ -419,7 +419,7 @@ cases:
     _metadata:
       _self:
         description: $ICD10MainText
-        parent_codes: 'f"ICD10GM/{$ICD10Main}" if /^[A-Z][0-9]{2}(\.[0-9]{1,2})?$/ in $ICD10Main'
+        parent_codes: 'f"ICD10GM//{$ICD10Main}" if /^[A-Z][0-9]{2}(\.[0-9]{1,2})?$/ in $ICD10Main'
   # A free-text secondary diagnosis with no code of its own; it varies row to row, so it is a
   # text_value rather than code metadata. `$c == $c` is dftly's presence test (dftly has no
   # null test); without it the 3,619 cases that have no second diagnosis would each emit an
@@ -521,7 +521,7 @@ laboratory:
     #
     # 403 of the 427 analytes carry a LOINC_code, but 10 of those are local Salzburg
     # identifiers wearing the column's name -- ZL-315, ZL-3188, V00055, V00578-7,
-    # #NOCDAEXPORT#. Publishing them as `LOINC/...` parents would be a fabricated ontology
+    # #NOCDAEXPORT#. Publishing them as `LOINC//...` parents would be a fabricated ontology
     # link, so only the 393 that full-match the canonical <digits>-<check digit> shape pass.
     # Those 393 resolve to 371 distinct LOINC concepts (22 LOINCs are each shared by two
     # SICdb analytes), and they land on 419 of the 455 emitted LAB codes.
@@ -539,7 +539,7 @@ laboratory:
         unit: $ReferenceUnit
         loinc_long: $LOINC_long
         parent_codes: >-
-          f"LOINC/{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code and $LOINC_code != "8310-5"
+          f"LOINC//{$LOINC_code}" if /^[0-9]{1,5}-[0-9]$/ in $LOINC_code and $LOINC_code != "8310-5"
 
 # ===========================================================================
 # medication -- 5.1M rows. Carries its own PatientID (100% consistent with cases), so the
@@ -760,15 +760,15 @@ data_float_h:
         # DataID yields null here and keeps no parent. The id is compared as text: the
         # d_references key reaches this metadata block as a string column.
         parent_codes: >-
-          "LOINC/8867-4" if $ReferenceGlobalID::str == "708"
-          else "LOINC/9279-1" if $ReferenceGlobalID::str == "719"
-          else "LOINC/8480-6" if $ReferenceGlobalID::str == "701" or $ReferenceGlobalID::str == "704"
-          else "LOINC/8462-4" if $ReferenceGlobalID::str == "702" or $ReferenceGlobalID::str == "705"
-          else "LOINC/8478-0" if $ReferenceGlobalID::str == "703" or $ReferenceGlobalID::str == "706"
-          else "LOINC/8310-5" if $ReferenceGlobalID::str == "709"
-          else "LOINC/59408-5" if $ReferenceGlobalID::str == "710"
-          else "LOINC/3150-0" if $ReferenceGlobalID::str == "2283"
-          else "LOINC/9187-6" if $ReferenceGlobalID::str == "725"
+          "LOINC//8867-4" if $ReferenceGlobalID::str == "708"
+          else "LOINC//9279-1" if $ReferenceGlobalID::str == "719"
+          else "LOINC//8480-6" if $ReferenceGlobalID::str == "701" or $ReferenceGlobalID::str == "704"
+          else "LOINC//8462-4" if $ReferenceGlobalID::str == "702" or $ReferenceGlobalID::str == "705"
+          else "LOINC//8478-0" if $ReferenceGlobalID::str == "703" or $ReferenceGlobalID::str == "706"
+          else "LOINC//8310-5" if $ReferenceGlobalID::str == "709"
+          else "LOINC//59408-5" if $ReferenceGlobalID::str == "710"
+          else "LOINC//3150-0" if $ReferenceGlobalID::str == "2283"
+          else "LOINC//9187-6" if $ReferenceGlobalID::str == "725"
 
 # ===========================================================================
 # unitlog -- NOT EXTRACTED, on the evidence.
