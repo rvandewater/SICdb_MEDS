@@ -26,6 +26,8 @@ sources:
 
 etl:
   dataset_name: SICdb
+  # Delete the <output_dir>/<stage> dirs after a successful run; keep: "overrides=['cleanup_intermediates=false']"
+  cleanup_intermediates: true
   n_subjects_per_shard: 1000
   # Written to `metadata/dataset.json`, from the release's PhysioNet page. Keep the URI's version
   # in step with `sources.dataset_version`.

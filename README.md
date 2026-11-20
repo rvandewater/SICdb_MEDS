@@ -42,6 +42,15 @@ ETL. See [Enriching code metadata with suMEDS](#enriching-code-metadata-with-sum
 Waveform extraction is not currently supported; see
 [#1](https://github.com/rvandewater/SICdb_MEDS/issues/1).
 
+Intermediate stage outputs are deleted after a successful run, by default: the spec sets
+MEDS-Extract's `etl.cleanup_intermediates: true`, so a finished `$MEDS_COHORT_DIR` holds only `data/`,
+`metadata/`, `.logs/` and `.meds_extract_run/`. A failed run keeps them, so the same command resumes
+where it stopped, and the same command on a finished output still does nothing. To keep them (to look
+at a stage's output; `$MEDS_COHORT_DIR/.logs/pipeline.log` keeps the stage logs either way), add
+`"overrides=['cleanup_intermediates=false']"`. Cleanup never deletes raw data: a download into the
+default `$MEDS_COHORT_DIR/.meds_extract_run/raw_input` stays, and `download_dest_dir=` elsewhere lets other
+output directories reuse it.
+
 ## Configuration
 
 The entire ETL is described by one file, `src/SICdb_MEDS/messy.yaml` — a
@@ -310,6 +319,17 @@ baseline. A MEDS-Extract, suMEDS or polars upgrade can also move the output, so 
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
 process.
+
+## Breaking changes
+
+### Unreleased
+
+- **Intermediate stage outputs are no longer kept.** Up to 0.2.0, a run left each stage's output in
+    `<output_dir>/<stage>/` (`convert_to_parquet/`, `convert_to_MEDS_events/`, `sumeds_enrich/`, …). The spec now sets MEDS-Extract's
+    `etl.cleanup_intermediates: true`, so a successful run deletes those directories and keeps only
+    `data/`, `metadata/`, `.logs/` and `.meds_extract_run/`. The MEDS data and metadata are
+    unchanged. To migrate, add `"overrides=['cleanup_intermediates=false']"` to `meds-extract-run`
+    wherever you read a stage directory after the run.
 
 ## Citation
 

@@ -35,7 +35,10 @@ classifiers = [
 # `sumeds_link_unit_siblings` post-stage the spec runs first. It is capped below the next minor
 # because its rules format and CLI are still 0.x.
 dependencies = [
-  "MEDS-extract[download]>=0.9.0,<0.10",
+  # DRAFT: MEDS-Extract from mmcdermott/MEDS_extract#340, which adds the spec's
+  # `etl.cleanup_intermediates`. Before merging, this goes back to the released pin of the next
+  # MEDS-Extract version that includes it (e.g. `>=0.9.1,<0.10`).
+  "MEDS-extract[download] @ git+https://github.com/mmcdermott/MEDS_extract@refs/pull/340/head",
   "sumeds>=0.6.7,<0.7",
 ]
 
