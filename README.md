@@ -88,20 +88,20 @@ fall before the ICU admission itself.
 `messy.yaml` and comes from SICdb's own tables or its
 [documentation](https://www.sicdb.com/Documentation/Main_Page):
 
-- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION//…`,
+- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION_ADMINISTRATION//…`,
     `CASE_ATTR//…`, `DEVICE//…`, `VITAL//…` and the other `cases` reference columns): the
     `d_references` entry, through a `_metadata` block keyed on the id. Lab codes also get the unit and
     the LOINC long name.
 - `DIAGNOSIS//ICD//10GM//…`: `cases.ICD10MainText`.
 - Every other code (`MEDS_BIRTH`, `MEDS_DEATH`, `SEX//…`, `ADMISSION_YEAR//…`, `ICU_ADMISSION`,
-    `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
+    `WEIGHT`, `SAPS3`, `HEART_SURGERY//…`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
     column.
 
 **Units.** `unit` is a String: the unit of the code's numeric values, one per code, written in
 [UCUM](https://ucum.org/) by suMEDS's `sumeds_normalize_units` stage (`mg/dl` becomes `mg/dL`, `bpm`
 becomes `{beats}/min`). The spelling as recorded stays in `unit_source_value`, a spelling suMEDS does
 not know is kept as it is, and the codes keep their names. Codes with a `d_references` id (`LAB//…`,
-`VITAL//…`, `MEDICATION//…`, `MEDICATION_RATE//…`, `MEDICATION_END//…`) take it from `ReferenceUnit`,
+`VITAL//…`, `MEDICATION_ADMINISTRATION//…`, `MEDICATION_RATE//…`) take it from `ReferenceUnit`,
 one row per id, so one unit per code. The six numeric codes described only in `messy.yaml` carry the
 unit their description states, in UCUM: `WEIGHT` `kg`, `HEIGHT` `cm`, `CRRT_HOURS` `h`,
 `HOSPITAL_STAY_DAYS` `d`, and `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES`
@@ -111,9 +111,10 @@ String per code and fail the build if a code has more than one unit
 ([MEDS_extract#336](https://github.com/mmcdermott/MEDS_extract/pull/336)), so the ETL needs no code
 of its own for it.
 
-The constant codes (`MEDS_DEATH`, `ICU_ADMISSION`, `HEART_SURGERY_BEGIN`, `HEART_SURGERY_END`,
+The constant codes (`MEDS_DEATH`, `ICU_ADMISSION`, `HEART_SURGERY//START`, `HEART_SURGERY//END`,
 `HEART_SURGERY_CPB_MINUTES`, `HEART_SURGERY_CROSSCLAMP_MINUTES`) are plain literals
-(`code: ICU_ADMISSION`) with a `_self` block: MEDS-Extract 0.8.1 and later accept `_self` on a literal
+(`code: ICU_ADMISSION`) with a `_self` block; the two with `//` are quoted
+(`code: '"HEART_SURGERY//START"'`), as unquoted the expression reads `//` as division: MEDS-Extract 0.8.1 and later accept `_self` on a literal
 code ([MEDS_extract#315](https://github.com/mmcdermott/MEDS_extract/pull/315)), and their
 `code_template` is the code itself.
 
@@ -330,6 +331,29 @@ process.
     spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
     migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
     already read both spellings as the same parent.
+- **Intervals are `<FAMILY>//START//…` and `<FAMILY>//END//…`**
+    ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)), the spelling all MEDS ETLs move to
+    for the two ends of an interval, so a start pairs with its end by swapping `START` for `END`. The
+    medication administrations also get the family `MEDICATION_ADMINISTRATION`: with the token in place,
+    `MEDICATION//START` would read as an order, which is what it is in MIMIC-IV, NWICU, PICdb, ALOTT, eICU and
+    CDSL, while SICdb's rows are charted administrations (MC-MED's administrations are
+    `MEDICATION_ADMINISTRATION//…` too). Events, times, values and code metadata are otherwise unchanged.
+    `MEDICATION_RATE//<DrugID>`, `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES` keep their
+    names.
+
+    | Old                        | New                                          |
+    | -------------------------- | -------------------------------------------- |
+    | `MEDICATION//<DrugID>`     | `MEDICATION_ADMINISTRATION//START//<DrugID>` |
+    | `MEDICATION_END//<DrugID>` | `MEDICATION_ADMINISTRATION//END//<DrugID>`   |
+    | `DEVICE//<DataID>//START`  | `DEVICE//START//<DataID>`                    |
+    | `DEVICE//<DataID>//END`    | `DEVICE//END//<DataID>`                      |
+    | `HEART_SURGERY_BEGIN`      | `HEART_SURGERY//START`                       |
+    | `HEART_SURGERY_END`        | `HEART_SURGERY//END`                         |
+
+    To migrate, rewrite old codes with these regexes, in this order: `^MEDICATION_END//` →
+    `MEDICATION_ADMINISTRATION//END//`; `^MEDICATION//` → `MEDICATION_ADMINISTRATION//START//`;
+    `^DEVICE//(.+)//(START|END)$` → `DEVICE//\2//\1`; `^HEART_SURGERY_BEGIN$` → `HEART_SURGERY//START`;
+    `^HEART_SURGERY_END$` → `HEART_SURGERY//END`.
 - **`CaseID` is renamed `icustay_id`.** The column holds the same value as before, `cases.CaseID`
     (one ICU admission), on the same events, and is still the one `raw_source_id_columns` entry in
     `metadata/dataset.json`. Event rows and codes are otherwise unchanged. `icustay_id` is the name
