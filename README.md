@@ -122,10 +122,11 @@ of its own for it.
 
 The constant codes (`MEDS_DEATH`, `ICU_ADMISSION`, `HEART_SURGERY//START`, `HEART_SURGERY//END`,
 `HEART_SURGERY_CPB_MINUTES`, `HEART_SURGERY_CROSSCLAMP_MINUTES`) are plain literals
-(`code: ICU_ADMISSION`) with a `_self` block; the two with `//` are quoted
-(`code: '"HEART_SURGERY//START"'`), as unquoted the expression reads `//` as division: MEDS-Extract 0.8.1 and later accept `_self` on a literal
+(`code: ICU_ADMISSION`) with a `_self` block: MEDS-Extract 0.8.1 and later accept `_self` on a literal
 code ([MEDS_extract#315](https://github.com/mmcdermott/MEDS_extract/pull/315)), and their
-`code_template` is the code itself.
+`code_template` is the code itself. The two with `//` are string literals
+(`code: '"HEART_SURGERY//START"'`), as the expression would read an unquoted `//` as division; their
+`code_template` keeps the quotes (`"HEART_SURGERY//START"`).
 
 The ETL writes the vocabulary parents that SICdb records itself:
 
