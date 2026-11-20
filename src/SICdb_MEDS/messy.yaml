@@ -38,6 +38,11 @@ etl:
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
   post_stages:
+    # Codes that differ only in their last `//<unit>` part get the code without it as a parent, with
+    # a row of its own (suMEDS's docs/unit_siblings.md, default options). SICdb has no such codes
+    # (each `d_references` id has one unit), so this changes nothing today; it runs, as in the other
+    # MEDS ETLs, before unit normalisation and the enrichment.
+    - sumeds_link_unit_siblings
     # One UCUM spelling for every `unit` (suMEDS's shared table, e.g. `Cel`, `mm[Hg]`, `mg/dL`); the
     # spelling as recorded stays in `unit_source_value`, and an unknown spelling is kept as it is.
     - sumeds_normalize_units
