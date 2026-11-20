@@ -31,9 +31,11 @@ etl:
   # in step with `sources.dataset_version`.
   license: PhysioNet Contributor Review Health Data License 1.5.0
   description_uri: https://physionet.org/content/sicdb/1.0.8/
-  # `CaseID` is the release's ICU admission key. Every other extension column is listed under
-  # `other_extension_columns` in `dataset.json`.
-  raw_source_id_columns: [CaseID]
+  # `icustay_id` is the release's ICU admission key, `cases.CaseID` ("a single entry for each
+  # intensive care admission", PhysioNet SICdb 1.0.8). The name is the MIMIC-IV ETL's, shared by the
+  # other MEDS ETLs (rvandewater/alignEHR#55); SICdb has no hospital-stay id. Every other extension
+  # column is listed under `other_extension_columns` in `dataset.json`.
+  raw_source_id_columns: [icustay_id]
   # After the canonical stages, suMEDS adds parent codes and names to `metadata/codes.parquet` and
   # records the result in `dataset.json` under `sumeds_enrichment`. If it cannot (no internet, say),
   # the ETL still succeeds, unenriched, and `suMEDS-enrich <output_dir>` finishes it later.
@@ -171,7 +173,7 @@ cases:
   # One MEDS_DEATH per SUBJECT. This one needs no guard: every case of a dead patient that
   # carries OffsetOfDeath resolves to the *identical* instant on this timeline (verified:
   # zero spread across all 713 multi-case deaths), and the rows are identical in every
-  # column -- note there is deliberately no `CaseID` here -- so `merge_to_MEDS_cohort`'s
+  # column -- note there is deliberately no `icustay_id` here -- so `merge_to_MEDS_cohort`'s
   # default `unique_by: "*"` collapses them. Guarding on the first case instead would lose
   # 518 of the 4,142 deaths: OffsetOfDeath is 1-year mortality, so a patient who died >1 y
   # after their first admission but <1 y after a later one is recorded only on the later case.
@@ -202,7 +204,7 @@ cases:
   admission_year:
     code: 'f"ADMISSION_YEAR//{$AdmissionYear}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -220,7 +222,7 @@ cases:
   admission:
     code: 'f"ADMISSION//{$AdmissionUrgency}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         AdmissionUrgency: $ReferenceGlobalID
@@ -228,7 +230,7 @@ cases:
   referring_unit:
     code: 'f"REFERRING_UNIT//{$ReferringUnit}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         ReferringUnit: $ReferenceGlobalID
@@ -236,7 +238,7 @@ cases:
   surgical_admission_type:
     code: 'f"SURGICAL_ADMISSION_TYPE//{$SurgicalAdmissionType}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         SurgicalAdmissionType: $ReferenceGlobalID
@@ -244,7 +246,7 @@ cases:
   surgical_site:
     code: 'f"SURGICAL_SITE//{$SurgicalSite}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         SurgicalSite: $ReferenceGlobalID
@@ -252,7 +254,7 @@ cases:
   sepsis_on_admission:
     code: 'f"SEPSIS_ON_ADMISSION//{$AdmissionFormHasSepsis}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         AdmissionFormHasSepsis: $ReferenceGlobalID
@@ -262,7 +264,7 @@ cases:
   survival_observation_window:
     code: 'f"SURVIVAL_OBSERVATION_WINDOW//{$EstimatedSurvivalObservationTime}"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         EstimatedSurvivalObservationTime: $ReferenceGlobalID
@@ -270,7 +272,7 @@ cases:
   icu_admission:
     code: ICU_ADMISSION
     time: $_icu
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -281,7 +283,7 @@ cases:
   discharge:
     code: 'f"DISCHARGE//{$DischargeState}"'
     time: $_dis
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         DischargeState: $ReferenceGlobalID
@@ -289,7 +291,7 @@ cases:
   discharge_unit:
     code: 'f"DISCHARGE_UNIT//{$DischargeUnit}"'
     time: $_dis
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         DischargeUnit: $ReferenceGlobalID
@@ -298,7 +300,7 @@ cases:
   hospital_unit:
     code: 'f"HOSPITAL_UNIT//{$HospitalUnit}"'
     time: $_dis
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         HospitalUnit: $ReferenceGlobalID
@@ -308,7 +310,7 @@ cases:
   hospital_discharge:
     code: 'f"HOSPITAL_DISCHARGE//{$HospitalDischargeType}"'
     time: $_hospdis
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         HospitalDischargeType: $ReferenceGlobalID
@@ -321,7 +323,7 @@ cases:
     code: '"WEIGHT" if $WeightOnAdmission > 0'
     time: $_adm
     numeric_value: $_weight_kg
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: '"Body weight on admission, kg (source is grams, rounded to +-5 kg)"'
@@ -333,7 +335,7 @@ cases:
     code: '"HEIGHT" if $HeightOnAdmission > 0'
     time: $_adm
     numeric_value: $HeightOnAdmission
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: '"Body height on admission, cm (rounded to +-5 cm)"'
@@ -348,7 +350,7 @@ cases:
     code: '"SAPS3" if $saps3 > 0'
     time: $_icu
     numeric_value: $saps3
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: '"SAPS III score, from the first hour of ICU care (cases.saps3)"'
@@ -357,7 +359,7 @@ cases:
     code: '"CRRT_HOURS" if $HoursOfCRRT > 0'
     time: $_dis
     numeric_value: $HoursOfCRRT
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -372,7 +374,7 @@ cases:
     code: '"HOSPITAL_STAY_DAYS" if $HospitalStayDays == $HospitalStayDays'
     time: $_hospdis
     numeric_value: $HospitalStayDays
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -395,7 +397,7 @@ cases:
   diagnosis:
     code: 'f"DIAGNOSIS//ICD//10GM//{$ICD10Main}"'
     time: $_dis
-    CaseID: $CaseID
+    icustay_id: $CaseID
     #
     # EXPECTED WARNING: `extract_code_metadata` logs one "_self metadata ... extra rows for an
     # already-seen code" for this block. 16 of the 2,168 distinct ICD-10-GM codes carry two
@@ -417,7 +419,7 @@ cases:
     code: '"DIAGNOSIS_SECONDARY_TEXT" if $DiagnosisT2 == $DiagnosisT2'
     time: $_dis
     text_value: $DiagnosisT2
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -428,7 +430,7 @@ cases:
   heart_surgery_begin:
     code: HEART_SURGERY_BEGIN
     time: $_surg_beg
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -436,7 +438,7 @@ cases:
   heart_surgery_end:
     code: HEART_SURGERY_END
     time: $_surg_end
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: '"End of heart surgery (cases.HeartSurgeryEndOffset after the case admission)"'
@@ -446,7 +448,7 @@ cases:
     code: HEART_SURGERY_CPB_MINUTES
     time: $_surg_end
     numeric_value: $HeartSurgeryCPBTime
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -458,7 +460,7 @@ cases:
     code: HEART_SURGERY_CROSSCLAMP_MINUTES
     time: $_surg_end
     numeric_value: $HeartSurgeryCrossClampTime
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       _self:
         description: >-
@@ -557,7 +559,7 @@ medication:
     code: 'f"MEDICATION//{$DrugID}" if $Amount > 0'
     time: $_t
     numeric_value: $Amount
-    CaseID: $CaseID
+    icustay_id: $CaseID
     IsSingleDose: $IsSingleDose
     _metadata:
       d_references:
@@ -568,7 +570,7 @@ medication:
   medication_end:
     code: 'f"MEDICATION_END//{$DrugID}" if $Amount > 0'
     time: $_tend
-    CaseID: $CaseID
+    icustay_id: $CaseID
     EventID: $id
     _metadata:
       d_references:
@@ -583,7 +585,7 @@ medication:
     code: 'f"MEDICATION_RATE//{$DrugID}" if $IsSingleDose == 0 and $AmountPerMinute > 0'
     time: $_t
     numeric_value: $AmountPerMinute
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         DrugID: $ReferenceGlobalID
@@ -640,7 +642,7 @@ data_ref:
   baseline:
     code: 'f"CASE_ATTR//{$FieldID}//{$_val}" if $_bucket == "BASELINE"'
     time: $_adm
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         FieldID: $ReferenceGlobalID
@@ -651,7 +653,7 @@ data_ref:
   derived:
     code: 'f"CASE_ATTR//{$FieldID}//{$_val}" if $_bucket == "DERIVED"'
     time: $_dis
-    CaseID: $CaseID
+    icustay_id: $CaseID
     _metadata:
       d_references:
         FieldID: $ReferenceGlobalID
@@ -680,7 +682,7 @@ data_range:
   device_start:
     code: 'f"DEVICE//{$DataID}//START"'
     time: $_t
-    CaseID: $CaseID
+    icustay_id: $CaseID
     EventID: $id
     _metadata:
       d_references:
@@ -690,7 +692,7 @@ data_range:
   device_end:
     code: 'f"DEVICE//{$DataID}//END"'
     time: $_tend
-    CaseID: $CaseID
+    icustay_id: $CaseID
     EventID: $id
     _metadata:
       d_references:
@@ -723,7 +725,7 @@ data_float_h:
     code: 'f"VITAL//{$DataID}"'
     time: $_t
     numeric_value: $Val
-    CaseID: $CaseID
+    icustay_id: $CaseID
     # The minute-sample count behind the hourly aggregate; an extra column rather than a
     # second event, and never `numeric_value`, which belongs to the measurement itself.
     n_samples: $cnt

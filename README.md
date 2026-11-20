@@ -73,8 +73,14 @@ registers [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml)
 the same name, which is how the spec's enrichment stage finds them.
 
 `metadata/dataset.json` gives the release's `license` and PhysioNet page (`description_uri`), and
-lists `CaseID`, the ICU admission key, under `raw_source_id_columns`. MEDS-Extract lists every other
-extension column (`n_samples`, ...) under `other_extension_columns`.
+lists `icustay_id`, the ICU admission key (`cases.CaseID`), under `raw_source_id_columns`.
+MEDS-Extract lists every other extension column (`n_samples`, ...) under `other_extension_columns`.
+`cases` has "a single entry for each intensive care admission"
+([PhysioNet SICdb 1.0.8](https://physionet.org/content/sicdb/1.0.8/)), and the release has no
+hospital-stay id, so the column takes the name the MIMIC-IV ETL and the other MEDS ETLs give the ICU
+stay ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). A case's timeline starts at
+its first admission to a MetaVision ward, which can be a preceding surgery, so a few events of a case
+fall before the ICU admission itself.
 
 ## Code metadata
 
@@ -314,16 +320,23 @@ process.
 
 ### Unreleased (after 0.2.0)
 
-- **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
-    (`ICD10GM`, `LOINC`) used one slash, `LOINC/2160-0`; they now use two, `LOINC//2160-0`, the
-    spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
-    migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
-    already read both spellings as the same parent.
 - **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
     `DIAGNOSIS//ICD10GM//<code>` are now `DIAGNOSIS//ICD//10GM//<code>`, the layout every MEDS ETL
     of this family uses for ICD (`ICD//10CM`, `ICD//9CM`, `ICD//10PCS`, `ICD//10CN`, ...). The code
     after the edition is unchanged (dotted, as SICdb records it), and so is its `ICD10GM//<code>`
     parent. To migrate, rename codes with the regex `^DIAGNOSIS//ICD10GM//` → `DIAGNOSIS//ICD//10GM//`.
+- **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
+    (`ICD10GM`, `LOINC`) used one slash, `LOINC/2160-0`; they now use two, `LOINC//2160-0`, the
+    spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
+    migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
+    already read both spellings as the same parent.
+- **`CaseID` is renamed `icustay_id`.** The column holds the same value as before, `cases.CaseID`
+    (one ICU admission), on the same events, and is still the one `raw_source_id_columns` entry in
+    `metadata/dataset.json`. Event rows and codes are otherwise unchanged. `icustay_id` is the name
+    the MIMIC-IV ETL and the other MEDS ETLs give the ICU stay
+    ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). To migrate, rename the
+    column: `pl.col("CaseID")` → `pl.col("icustay_id")`, or, for output written before the change,
+    `df.rename({"CaseID": "icustay_id"})`.
 
 ## Citation
 
