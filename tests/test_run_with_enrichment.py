@@ -283,9 +283,9 @@ def test_dataset_json_describes_the_release_and_its_columns(
         dataset["license"] == "PhysioNet Contributor Review Health Data License 1.5.0"
     )
     assert dataset["description_uri"] == "https://physionet.org/content/sicdb/1.0.8/"
-    assert dataset["raw_source_id_columns"] == ["CaseID"]
+    assert dataset["raw_source_id_columns"] == ["icustay_id"]
     extension = set(events.columns) - set(DataSchema.schema().names)
-    assert set(dataset["other_extension_columns"]) == extension - {"CaseID"}
+    assert set(dataset["other_extension_columns"]) == extension - {"icustay_id"}
     assert "code_modifier_columns" not in dataset
 
 

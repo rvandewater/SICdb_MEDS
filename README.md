@@ -73,8 +73,14 @@ registers [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml)
 the same name, which is how the spec's enrichment stage finds them.
 
 `metadata/dataset.json` gives the release's `license` and PhysioNet page (`description_uri`), and
-lists `CaseID`, the ICU admission key, under `raw_source_id_columns`. MEDS-Extract lists every other
-extension column (`n_samples`, ...) under `other_extension_columns`.
+lists `icustay_id`, the ICU admission key (`cases.CaseID`), under `raw_source_id_columns`.
+MEDS-Extract lists every other extension column (`n_samples`, ...) under `other_extension_columns`.
+`cases` has "a single entry for each intensive care admission"
+([PhysioNet SICdb 1.0.8](https://physionet.org/content/sicdb/1.0.8/)), and the release has no
+hospital-stay id, so the column takes the name the MIMIC-IV ETL and the other MEDS ETLs give the ICU
+stay ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). A case's timeline starts at
+its first admission to a MetaVision ward, which can be a preceding surgery, so a few events of a case
+fall before the ICU admission itself.
 
 ## Code metadata
 
@@ -310,6 +316,18 @@ baseline. A MEDS-Extract, suMEDS or polars upgrade can also move the output, so 
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, tests, running the ETL locally, and the release
 process.
+
+## Breaking changes
+
+### Unreleased
+
+- **`CaseID` is renamed `icustay_id`.** The column holds the same value as before, `cases.CaseID`
+    (one ICU admission), on the same events, and is still the one `raw_source_id_columns` entry in
+    `metadata/dataset.json`. Event rows and codes are otherwise unchanged. `icustay_id` is the name
+    the MIMIC-IV ETL and the other MEDS ETLs give the ICU stay
+    ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). To migrate, rename the
+    column: `pl.col("CaseID")` → `pl.col("icustay_id")`, or, for output written before the change,
+    `df.rename({"CaseID": "icustay_id"})`.
 
 ## Citation
 
