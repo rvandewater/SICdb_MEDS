@@ -131,10 +131,6 @@ reports that version. Before the switch to static versions, setuptools-scm repor
 Workflows on a PR from a first-time contributor's fork wait for a maintainer to click **Approve
 and run workflows** on the PR page.
 
-The MESSY_synth synthetic-data workflow was removed when the config moved to MEDS-Extract 0.8,
-because MESSY_synth still pins `MEDS-extract<0.8`. Once a MESSY_synth release supports 0.8, restore
-it with:
-
-```bash
-git checkout fcc6c21 -- .github/workflows/synthetic-etl.yaml
-```
+`synthetic-etl.yaml` generates raw files from the shipped MESSY config with
+[MESSY_synth](https://github.com/mmcdermott/MESSY_synth) and runs the whole spec over them. MESSY_synth
+0.1.1 reads MEDS-Extract 0.8 and 0.9 configs, so it installs next to the locked MEDS-Extract 0.9.
