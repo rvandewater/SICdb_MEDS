@@ -338,11 +338,13 @@ process.
     of this family uses for ICD (`ICD//10CM`, `ICD//9CM`, `ICD//10PCS`, `ICD//10CN`, ...). The code
     after the edition is unchanged (dotted, as SICdb records it), and so is its `ICD10GM//<code>`
     parent. To migrate, rename codes with the regex `^DIAGNOSIS//ICD10GM//` → `DIAGNOSIS//ICD//10GM//`.
+
 - **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
     (`ICD10GM`, `LOINC`) used one slash, `LOINC/2160-0`; they now use two, `LOINC//2160-0`, the
     spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
     migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
     already read both spellings as the same parent.
+
 - **Intervals are `<FAMILY>//START//…` and `<FAMILY>//END//…`**
     ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)), the spelling all MEDS ETLs move to
     for the two ends of an interval, so a start pairs with its end by swapping `START` for `END`. The
@@ -366,6 +368,7 @@ process.
     `MEDICATION_ADMINISTRATION//END//`; `^MEDICATION//` → `MEDICATION_ADMINISTRATION//START//`;
     `^DEVICE//(.+)//(START|END)$` → `DEVICE//\2//\1`; `^HEART_SURGERY_BEGIN$` → `HEART_SURGERY//START`;
     `^HEART_SURGERY_END$` → `HEART_SURGERY//END`.
+
 - **`CaseID` is renamed `icustay_id`.** The column holds the same value as before, `cases.CaseID`
     (one ICU admission), on the same events, and is still the one `raw_source_id_columns` entry in
     `metadata/dataset.json`. Event rows and codes are otherwise unchanged. `icustay_id` is the name
@@ -373,6 +376,7 @@ process.
     ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). To migrate, rename the
     column: `pl.col("CaseID")` → `pl.col("icustay_id")`, or, for output written before the change,
     `df.rename({"CaseID": "icustay_id"})`.
+
 - **Intermediate stage outputs are no longer kept.** Up to 0.2.0, a run left each stage's output in
     `<output_dir>/<stage>/` (`convert_to_parquet/`, `convert_to_MEDS_events/`, `sumeds_enrich/`, …). The spec now sets MEDS-Extract's
     `etl.cleanup_intermediates: true`, so a successful run deletes those directories and keeps only
