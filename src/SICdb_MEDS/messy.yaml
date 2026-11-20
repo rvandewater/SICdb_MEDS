@@ -404,7 +404,7 @@ cases:
   # codes (C19.x1, T68.x9) plus a handful of typos with a leading digit ("103.2") -- so the
   # parent is guarded by a full-match regex and simply omitted for those.
   diagnosis:
-    code: 'f"DIAGNOSIS//ICD10GM//{$ICD10Main}"'
+    code: 'f"DIAGNOSIS//ICD//10GM//{$ICD10Main}"'
     time: $_dis
     CaseID: $CaseID
     #
