@@ -236,7 +236,7 @@
     ],
     "present": true,
     "raw_source_id_columns": [
-      "CaseID"
+      "icustay_id"
     ],
     "sumeds_enrichment": {
       "athena": false,
@@ -328,10 +328,10 @@
     },
     "column_dtype_conflicts": {},
     "column_presence": {
-      "CaseID": 24,
       "EventID": 24,
       "IsSingleDose": 24,
       "code": 24,
+      "icustay_id": 24,
       "n_samples": 24,
       "numeric_value": 24,
       "source_block": 24,
@@ -340,10 +340,10 @@
       "time": 24
     },
     "data_columns": {
-      "CaseID": "Int64",
       "EventID": "Int64",
       "IsSingleDose": "Int64",
       "code": "String",
+      "icustay_id": "Int64",
       "n_samples": "Int64",
       "numeric_value": "Float32",
       "source_block": "String",
@@ -352,9 +352,9 @@
       "time": "Datetime(time_unit='us', time_zone=None)"
     },
     "extra_data_columns": [
-      "CaseID",
       "EventID",
       "IsSingleDose",
+      "icustay_id",
       "n_samples",
       "source_block",
       "text_value"

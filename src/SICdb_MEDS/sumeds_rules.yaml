@@ -3,7 +3,7 @@
 # `sumeds.rules` entry-point group as `SICdb`, the name of the MEDS-Extract spec.
 #
 # The ETL writes what SICdb itself records: a description for every code, `ICD10GM//<code>`
-# parents for `DIAGNOSIS//ICD10GM//<code>` (cases.ICD10Main) and `LOINC//<code>` parents for
+# parents for `DIAGNOSIS//ICD//10GM//<code>` (cases.ICD10Main) and `LOINC//<code>` parents for
 # `LAB//<LaboratoryID>//<specimen>` (d_references.LOINC_code). suMEDS resolves those existing
 # references, with names and ancestors, from its ontology packs or an Athena download without any
 # rule. This file adds what SICdb does not record:
@@ -18,12 +18,12 @@
 schema: sumeds-rules/0.1
 
 hierarchy:
-  # `S62.60` gets `DIAGNOSIS//ICD10GM//S62.6` if that code occurs, else `DIAGNOSIS//ICD10GM//S62`;
+  # `S62.60` gets `DIAGNOSIS//ICD//10GM//S62.6` if that code occurs, else `DIAGNOSIS//ICD//10GM//S62`;
   # the dot is skipped. Only the canonical shapes the ETL's `ICD10GM//` parent accepts (letter, two
   # digits, then optionally a dot and one or two digits) take part, so the non-canonical values
   # the config describes (`C19.x1`, `103.2`) get no same-dataset parent and are no one's parent.
   - id: sicdb-diagnosis-icd10gm-prefix
-    pattern: '^(?P<prefix>DIAGNOSIS//ICD10GM//)(?P<code>[A-Z][0-9]{2}(?:\.[0-9]{1,2})?)$'
+    pattern: '^(?P<prefix>DIAGNOSIS//ICD//10GM//)(?P<code>[A-Z][0-9]{2}(?:\.[0-9]{1,2})?)$'
     group: code
     mode: prefix
     ignore: "."

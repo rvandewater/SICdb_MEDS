@@ -143,7 +143,7 @@ def test_rules_match_no_other_code_layout(cfg, rules):
     # The rendering reaches every family of the config but the diagnosis itself.
     assert {
         "LAB",
-        "MEDICATION",
+        "MEDICATION_ADMINISTRATION",
         "MEDICATION_RATE",
         "CASE_ATTR",
         "VITAL",

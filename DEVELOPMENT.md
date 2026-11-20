@@ -57,7 +57,10 @@ A full run over release 1.0.8 takes a couple of minutes on a laptop and produces
 over 21,566 subjects.
 
 The top-level CLI log does not show stage warnings. Each stage writes its own log under
-`$OUT/<stage>/.logs/`, and `$OUT/.logs/pipeline.log` collects them. A healthy run has two kinds:
+`$OUT/<stage>/.logs/`, and `$OUT/.logs/pipeline.log` collects them. The stage directories, with their
+logs, are deleted once the run has succeeded (`cleanup_intermediates: true` in the spec), so read
+`pipeline.log`, or keep them with `"overrides=['cleanup_intermediates=false']"`. A healthy run has two
+kinds:
 
 - One `extract_code_metadata` warning, documented in `messy.yaml`.
 - Drop-accounting warnings from `convert_to_MEDS_events`. They count rows that produce no event by

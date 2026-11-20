@@ -42,6 +42,15 @@ ETL. See [Enriching code metadata with suMEDS](#enriching-code-metadata-with-sum
 Waveform extraction is not currently supported; see
 [#1](https://github.com/rvandewater/SICdb_MEDS/issues/1).
 
+Intermediate stage outputs are deleted after a successful run, by default: the spec sets
+MEDS-Extract's `etl.cleanup_intermediates: true`, so a finished `$MEDS_COHORT_DIR` holds only `data/`,
+`metadata/`, `.logs/` and `.meds_extract_run/`. A failed run keeps them, so the same command resumes
+where it stopped, and the same command on a finished output still does nothing. To keep them (to look
+at a stage's output; `$MEDS_COHORT_DIR/.logs/pipeline.log` keeps the stage logs either way), add
+`"overrides=['cleanup_intermediates=false']"`. Cleanup never deletes raw data: a download into the
+default `$MEDS_COHORT_DIR/.meds_extract_run/raw_input` stays, and `download_dest_dir=` elsewhere lets other
+output directories reuse it.
+
 ## Configuration
 
 The entire ETL is described by one file, `src/SICdb_MEDS/messy.yaml` — a
@@ -73,8 +82,14 @@ registers [`src/SICdb_MEDS/sumeds_rules.yaml`](src/SICdb_MEDS/sumeds_rules.yaml)
 the same name, which is how the spec's enrichment stage finds them.
 
 `metadata/dataset.json` gives the release's `license` and PhysioNet page (`description_uri`), and
-lists `CaseID`, the ICU admission key, under `raw_source_id_columns`. MEDS-Extract lists every other
-extension column (`n_samples`, ...) under `other_extension_columns`.
+lists `icustay_id`, the ICU admission key (`cases.CaseID`), under `raw_source_id_columns`.
+MEDS-Extract lists every other extension column (`n_samples`, ...) under `other_extension_columns`.
+`cases` has "a single entry for each intensive care admission"
+([PhysioNet SICdb 1.0.8](https://physionet.org/content/sicdb/1.0.8/)), and the release has no
+hospital-stay id, so the column takes the name the MIMIC-IV ETL and the other MEDS ETLs give the ICU
+stay ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). A case's timeline starts at
+its first admission to a MetaVision ward, which can be a preceding surgery, so a few events of a case
+fall before the ICU admission itself.
 
 ## Code metadata
 
@@ -82,20 +97,20 @@ extension column (`n_samples`, ...) under `other_extension_columns`.
 `messy.yaml` and comes from SICdb's own tables or its
 [documentation](https://www.sicdb.com/Documentation/Main_Page):
 
-- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION//…`,
+- Codes that carry a `d_references` id (`ADMISSION//…`, `DISCHARGE//…`, `LAB//…`, `MEDICATION_ADMINISTRATION//…`,
     `CASE_ATTR//…`, `DEVICE//…`, `VITAL//…` and the other `cases` reference columns): the
     `d_references` entry, through a `_metadata` block keyed on the id. Lab codes also get the unit and
     the LOINC long name.
-- `DIAGNOSIS//ICD10GM//…`: `cases.ICD10MainText`.
+- `DIAGNOSIS//ICD//10GM//…`: `cases.ICD10MainText`.
 - Every other code (`MEDS_BIRTH`, `MEDS_DEATH`, `SEX//…`, `ADMISSION_YEAR//…`, `ICU_ADMISSION`,
-    `WEIGHT`, `SAPS3`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
+    `WEIGHT`, `SAPS3`, `HEART_SURGERY//…`, `HEART_SURGERY_…`, …): a `_self` block whose description names the source
     column.
 
 **Units.** `unit` is a String: the unit of the code's numeric values, one per code, written in
 [UCUM](https://ucum.org/) by suMEDS's `sumeds_normalize_units` stage (`mg/dl` becomes `mg/dL`, `bpm`
 becomes `{beats}/min`). The spelling as recorded stays in `unit_source_value`, a spelling suMEDS does
 not know is kept as it is, and the codes keep their names. Codes with a `d_references` id (`LAB//…`,
-`VITAL//…`, `MEDICATION//…`, `MEDICATION_RATE//…`, `MEDICATION_END//…`) take it from `ReferenceUnit`,
+`VITAL//…`, `MEDICATION_ADMINISTRATION//…`, `MEDICATION_RATE//…`) take it from `ReferenceUnit`,
 one row per id, so one unit per code. The six numeric codes described only in `messy.yaml` carry the
 unit their description states, in UCUM: `WEIGHT` `kg`, `HEIGHT` `cm`, `CRRT_HOURS` `h`,
 `HOSPITAL_STAY_DAYS` `d`, and `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES`
@@ -105,11 +120,13 @@ String per code and fail the build if a code has more than one unit
 ([MEDS_extract#336](https://github.com/mmcdermott/MEDS_extract/pull/336)), so the ETL needs no code
 of its own for it.
 
-The constant codes (`MEDS_DEATH`, `ICU_ADMISSION`, `HEART_SURGERY_BEGIN`, `HEART_SURGERY_END`,
+The constant codes (`MEDS_DEATH`, `ICU_ADMISSION`, `HEART_SURGERY//START`, `HEART_SURGERY//END`,
 `HEART_SURGERY_CPB_MINUTES`, `HEART_SURGERY_CROSSCLAMP_MINUTES`) are plain literals
 (`code: ICU_ADMISSION`) with a `_self` block: MEDS-Extract 0.8.1 and later accept `_self` on a literal
 code ([MEDS_extract#315](https://github.com/mmcdermott/MEDS_extract/pull/315)), and their
-`code_template` is the code itself.
+`code_template` is the code itself. The two with `//` are string literals
+(`code: '"HEART_SURGERY//START"'`), as the expression would read an unquoted `//` as division; their
+`code_template` keeps the quotes (`"HEART_SURGERY//START"`).
 
 The ETL writes the vocabulary parents that SICdb records itself:
 
@@ -153,14 +170,17 @@ The package ships the rules for it,
 `sumeds.rules` entry-point group under the same name as the MEDS-Extract spec, `SICdb`, so
 `--rules SICdb` works for any suMEDS command. The spec runs them as its last stage, after suMEDS's
 [`sumeds_link_unit_siblings`](https://github.com/rvandewater/suMEDS/blob/main/docs/unit_siblings.md),
-which links codes that differ only in their unit (SICdb has none: each `d_references` id has one
-unit, so it changes nothing today, but the post-stages are the same as in the other MEDS ETLs), and
+which links codes that differ only in their unit, and with `link_single_units: true` also a code
+ending in its unit when its item has one (SICdb has neither: each `d_references` id has one
+unit and no code ends in it, so it changes nothing today, but the post-stages are the same as in the
+other MEDS ETLs), and
 `sumeds_normalize_units`, which writes `unit` in UCUM (see **Units** above):
 
 ```yaml
 etl:
   post_stages:
-    - sumeds_link_unit_siblings
+    - sumeds_link_unit_siblings:
+        link_single_units: true
     - sumeds_normalize_units
     - sumeds_enrich: {rules: SICdb}
 ```
@@ -230,13 +250,13 @@ SICdb's own. For SICdb, suMEDS adds:
     `vocabulary_id` `LOINC` and its `concept_code`. The stage option `loinc_hierarchy`
     (`--loinc-hierarchy` for `suMEDS-enrich`) also adds the LOINC Parts above the term as parents.
 - **ICD-10-GM names**, with an Athena download (`athena_csv`) only. suMEDS has no ICD-10-GM pack, so the
-    `ICD10GM//…` parents of `DIAGNOSIS//ICD10GM//…` codes are resolved only from an Athena download
+    `ICD10GM//…` parents of `DIAGNOSIS//ICD//10GM//…` codes are resolved only from an Athena download
     that includes the vocabulary, which also gives the diagnosis codes their OMOP concept fields.
 - **Same-dataset diagnosis parents**, from the one rule of the file:
 
-| Rule                             | Kind                                     | Adds                                                                                                                                                            |
-| -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD10GM//S62.60` gets `DIAGNOSIS//ICD10GM//S62.6`, else `DIAGNOSIS//ICD10GM//S62`) |
+| Rule                             | Kind                                     | Adds                                                                                                                                                                  |
+| -------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sicdb-diagnosis-icd10gm-prefix` | hierarchy, `mode: prefix`, `ignore: "."` | the nearest shorter diagnosis code that also occurs in the data (`DIAGNOSIS//ICD//10GM//S62.60` gets `DIAGNOSIS//ICD//10GM//S62.6`, else `DIAGNOSIS//ICD//10GM//S62`) |
 
 Only canonical ICD-10-GM codes take part, the same shapes the ETL's `ICD10GM//` parent accepts. The
 parents the ETL wrote keep their place at the start of `parent_codes`, and the added ones follow. The
@@ -314,11 +334,56 @@ process.
 
 ### Unreleased (after 0.2.0)
 
+- **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
+    `DIAGNOSIS//ICD10GM//<code>` are now `DIAGNOSIS//ICD//10GM//<code>`, the layout every MEDS ETL
+    of this family uses for ICD (`ICD//10CM`, `ICD//9CM`, `ICD//10PCS`, `ICD//10CN`, ...). The code
+    after the edition is unchanged (dotted, as SICdb records it), and so is its `ICD10GM//<code>`
+    parent. To migrate, rename codes with the regex `^DIAGNOSIS//ICD10GM//` → `DIAGNOSIS//ICD//10GM//`.
+
 - **Vocabulary parents are spelled `VOCABULARY//CODE`.** The `parent_codes` the ETL writes itself
     (`ICD10GM`, `LOINC`) used one slash, `LOINC/2160-0`; they now use two, `LOINC//2160-0`, the
     spelling suMEDS already writes for the parents it adds. Codes and events are unchanged. To
     migrate, respell old parents with the regex `^([^/]+)/(?!/)` → `\1//`. suMEDS and alignEHR
     already read both spellings as the same parent.
+
+- **Intervals are `<FAMILY>//START//…` and `<FAMILY>//END//…`**
+    ([alignEHR#53](https://github.com/rvandewater/alignEHR/issues/53)), the spelling all MEDS ETLs move to
+    for the two ends of an interval, so a start pairs with its end by swapping `START` for `END`. The
+    medication administrations also get the family `MEDICATION_ADMINISTRATION`: with the token in place,
+    `MEDICATION//START` would read as an order, which is what it is in MIMIC-IV, NWICU, PICdb, ALOTT, eICU and
+    CDSL, while SICdb's rows are charted administrations (MC-MED's administrations are
+    `MEDICATION_ADMINISTRATION//…` too). Events, times, values and code metadata are otherwise unchanged.
+    `MEDICATION_RATE//<DrugID>`, `HEART_SURGERY_CPB_MINUTES` and `HEART_SURGERY_CROSSCLAMP_MINUTES` keep their
+    names.
+
+    | Old                        | New                                          |
+    | -------------------------- | -------------------------------------------- |
+    | `MEDICATION//<DrugID>`     | `MEDICATION_ADMINISTRATION//START//<DrugID>` |
+    | `MEDICATION_END//<DrugID>` | `MEDICATION_ADMINISTRATION//END//<DrugID>`   |
+    | `DEVICE//<DataID>//START`  | `DEVICE//START//<DataID>`                    |
+    | `DEVICE//<DataID>//END`    | `DEVICE//END//<DataID>`                      |
+    | `HEART_SURGERY_BEGIN`      | `HEART_SURGERY//START`                       |
+    | `HEART_SURGERY_END`        | `HEART_SURGERY//END`                         |
+
+    To migrate, rewrite old codes with these regexes, in this order: `^MEDICATION_END//` →
+    `MEDICATION_ADMINISTRATION//END//`; `^MEDICATION//` → `MEDICATION_ADMINISTRATION//START//`;
+    `^DEVICE//(.+)//(START|END)$` → `DEVICE//\2//\1`; `^HEART_SURGERY_BEGIN$` → `HEART_SURGERY//START`;
+    `^HEART_SURGERY_END$` → `HEART_SURGERY//END`.
+
+- **`CaseID` is renamed `icustay_id`.** The column holds the same value as before, `cases.CaseID`
+    (one ICU admission), on the same events, and is still the one `raw_source_id_columns` entry in
+    `metadata/dataset.json`. Event rows and codes are otherwise unchanged. `icustay_id` is the name
+    the MIMIC-IV ETL and the other MEDS ETLs give the ICU stay
+    ([alignEHR#55](https://github.com/rvandewater/alignEHR/issues/55)). To migrate, rename the
+    column: `pl.col("CaseID")` → `pl.col("icustay_id")`, or, for output written before the change,
+    `df.rename({"CaseID": "icustay_id"})`.
+
+- **Intermediate stage outputs are no longer kept.** Up to 0.2.0, a run left each stage's output in
+    `<output_dir>/<stage>/` (`convert_to_parquet/`, `convert_to_MEDS_events/`, `sumeds_enrich/`, …). The spec now sets MEDS-Extract's
+    `etl.cleanup_intermediates: true`, so a successful run deletes those directories and keeps only
+    `data/`, `metadata/`, `.logs/` and `.meds_extract_run/`. The MEDS data and metadata are
+    unchanged. To migrate, add `"overrides=['cleanup_intermediates=false']"` to `meds-extract-run`
+    wherever you read a stage directory after the run.
 
 ## Citation
 
