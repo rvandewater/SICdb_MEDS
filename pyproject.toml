@@ -35,12 +35,13 @@ classifiers = [
 # `sumeds_link_unit_siblings` post-stage the spec runs first. It is capped below the next minor
 # because its rules format and CLI are still 0.x.
 # suMEDS 0.6.9 adds the `link_single_units` option of `sumeds_link_unit_siblings`, which the spec
-# sets.
+# sets. 0.6.11 adds `UnitComponentContract.require_unit_in_code`, which
+# tests/test_unit_component.py sets.
 dependencies = [
   # 0.9.2 is the first MEDS-Extract release that reads the spec's
   # `etl.cleanup_intermediates` (mmcdermott/MEDS_extract#340).
   "MEDS-extract[download]>=0.9.2,<0.10",
-  "sumeds>=0.6.9,<0.7",
+  "sumeds>=0.6.11,<0.7",
 ]
 
 # The whole pipeline is this one data file. setuptools-scm used to ship it implicitly (its git file
@@ -60,7 +61,13 @@ slurm_parallelism = ["hydra-submitit-launcher"]
 # and `uv run`, so a plain `uv sync` can't uninstall pre-commit from under the git hook. Groups
 # are not published in the wheel's metadata. CI installs it with `pip install --group dev`.
 [dependency-groups]
-dev = ["pre-commit<4", "pytest", "pytest-cov"]
+dev = [
+  "pre-commit<4",
+  "pytest",
+  "pytest-cov",
+  # `UnitComponentContract` (tests/test_unit_component.py) and the dftly it evaluates the spec with.
+  "sumeds[testing]>=0.6.11,<0.7",
+]
 
 # Registers the bundled MESSY file as a MEDS-Extract dataset pipeline, so the whole
 # ETL is runnable as `meds-extract-run spec=SICdb output_dir=...`.

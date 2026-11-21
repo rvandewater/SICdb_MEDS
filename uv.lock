@@ -877,6 +877,7 @@ dev = [
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "sumeds", extra = ["testing"] },
 ]
 
 [package.metadata]
@@ -887,7 +888,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = "<4" },
     { name = "pytest", marker = "extra == 'tests'" },
     { name = "pytest-cov", marker = "extra == 'tests'" },
-    { name = "sumeds", specifier = ">=0.6.9,<0.7" },
+    { name = "sumeds", specifier = ">=0.6.11,<0.7" },
 ]
 provides-extras = ["dev", "tests", "local-parallelism", "slurm-parallelism"]
 
@@ -896,6 +897,7 @@ dev = [
     { name = "pre-commit", specifier = "<4" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "sumeds", extras = ["testing"], specifier = ">=0.6.11,<0.7" },
 ]
 
 [[package]]
@@ -922,7 +924,7 @@ wheels = [
 
 [[package]]
 name = "sumeds"
-version = "0.6.9"
+version = "0.6.11"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "meds" },
@@ -931,9 +933,15 @@ dependencies = [
     { name = "pyyaml" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d9/d8/28397865ed5591c69a1d80dc1845b3c5346b460bc2d8ab5191eb489b3356/sumeds-0.6.9.tar.gz", hash = "sha256:c631f5284c9e36301c51bf6f0764c05f370f3b98bf0fa054ae81d77b1d3beea3", size = 91395, upload-time = "2026-11-20T20:46:59.158Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/a2/cdc870e312de8573ace5c95cce91040c3780cbd0b28cff08ce235dd4a4c9/sumeds-0.6.11.tar.gz", hash = "sha256:1dd745697bde1d85b43d1a2277ad6bf85f9ebfb916df923952f403254ee9d574", size = 98638, upload-time = "2026-11-21T00:14:33.307Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/57/83d093d3fcc07e54398666fd4760eef9ecdd90bacd5707eecb70da11819b/sumeds-0.6.9-py3-none-any.whl", hash = "sha256:1505c42ae934519b67ecaa69e816a12d5ebbd7aa63f8677b355e1c0b773ca5d8", size = 101260, upload-time = "2026-11-20T20:46:57.619Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/72/0bd61cfd04378fb51e3a85b146dcfe5118aa35a2d031d7e598955eca2eb5/sumeds-0.6.11-py3-none-any.whl", hash = "sha256:3cb49c111c6617b1b3267132089009cf54b79a84de79a62f02900db6b820ad42", size = 108354, upload-time = "2026-11-21T00:14:32.025Z" },
+]
+
+[package.optional-dependencies]
+testing = [
+    { name = "dftly" },
+    { name = "pytest" },
 ]
 
 [[package]]
