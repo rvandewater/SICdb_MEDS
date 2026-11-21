@@ -332,7 +332,9 @@ process.
 
 ## Breaking changes
 
-### Unreleased (after 0.2.0)
+### 0.3.0 (2026-11-20)
+
+- Rebuilt on the full release; `tests/regression/full_summary_stats.json` regenerated.
 
 - **ICD codes name the vocabulary and its edition apart, `ICD//<edition>//<code>`.** Diagnoses
     `DIAGNOSIS//ICD10GM//<code>` are now `DIAGNOSIS//ICD//10GM//<code>`, the layout every MEDS ETL

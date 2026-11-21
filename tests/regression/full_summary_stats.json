@@ -22,7 +22,7 @@
     "ontology": {
       "by_vocabulary": {
         "DIAGNOSIS": {
-          "keys_digest": "sha256:4036f6bb3065b6c0b70cfb6981d1fb1fcc772404b96d00e060d7a868a8693f99",
+          "keys_digest": "sha256:c6d36e0ebbebf42dc78adbba9a79cdd47b87370678f5e72ae17c3627a74124fe",
           "n_child_codes": 224,
           "n_distinct_keys": 109,
           "n_measurements": 2719,
@@ -98,7 +98,7 @@
       }
     },
     "present": true,
-    "vocabulary_digest": "sha256:b35c5b8c95acc2cd4cb75bc5558e3a94f271e390aa0db0cf42a042c974eea37c"
+    "vocabulary_digest": "sha256:f3ba0c1964336f703b11f3bf156d8b40f41ddee82ee3ff4e54fc5c5cd48c04ca"
   },
   "codes": {
     "concentration": {
@@ -110,30 +110,30 @@
       "n_codes_covering_99pct": 683
     },
     "digests": {
-      "alphabetical": "sha256:b35c5b8c95acc2cd4cb75bc5558e3a94f271e390aa0db0cf42a042c974eea37c",
-      "by_measurement_frequency": "sha256:b1e8b0dc088b64a425d3fdad4d64b2f2bf66a420ef98e169b7f7f4f0a1c58866",
-      "by_subject_frequency": "sha256:76c494897c9899b90cd81b41eb3fec37c32d6426b537eada6e04caccf4c480fd",
+      "alphabetical": "sha256:f3ba0c1964336f703b11f3bf156d8b40f41ddee82ee3ff4e54fc5c5cd48c04ca",
+      "by_measurement_frequency": "sha256:35c270b16eeb4de7b967e5f5fe3ab0f7319e74519f3d78d9b0df607505102944",
+      "by_subject_frequency": "sha256:d5ffcd5179269842786d81ca556a65f45677325aeef8a63c319ca1f970fb95b9",
       "numeric_moments": {
-        "digest": "sha256:f82da5687a64e5997e2034e831e0e1454b4e41c2d6f400b10a1c4bb32789a052",
+        "digest": "sha256:addce6817be33787fec859347e08cd50a5328f47c02b675a31373d28cb0b6a88",
         "n_codes": 1051
       },
       "thresholded": {
         "100": {
-          "alphabetical": "sha256:31fe974aa62256364130184f7306d8d185930d4850d664a040c4f2f8c25c5f05",
-          "by_measurement_frequency": "sha256:e67d02c936f792218c1e8b13021c179f652fd30c12b36e6576c009ba8d519284",
-          "by_subject_frequency": "sha256:7711b6b32902749ecfece00bf538bb00d246cb88714aa5c873ef191d2bd0941f",
+          "alphabetical": "sha256:e7b874f4752348790aa6b2cb33c61c2391f81437162590133469d0d8674a62d3",
+          "by_measurement_frequency": "sha256:4b53c1c43c862e59c9f68540309f26f1b09308f15ef3fff1f18127f05d609a92",
+          "by_subject_frequency": "sha256:0c7a00c45960a4c09943a7d5e182d3e8477ab49716e3566e1c67ccac3c8e9c90",
           "n_codes": 1293
         },
         "1000": {
-          "alphabetical": "sha256:e2d6f7030375f8ec80cfbeada9fa4f7cd00601b12adce4469ba7ab5ffe9c58fb",
-          "by_measurement_frequency": "sha256:e63dfcb6a2d34c55a06113e69f75ce6a5990f519dad6a3d368bfc561cae4c0f8",
-          "by_subject_frequency": "sha256:de4eb3644694ca73ef9fbb5fb0309c0717912dc084c707d0e2a64e31fec4e134",
+          "alphabetical": "sha256:863b64680bbb2b1d97c8d1558758df0e0d5c8874940ed59875e3c78b359d9f8e",
+          "by_measurement_frequency": "sha256:7e284406bd38d5367eb190954ce6a2f1c2fe9ccb9ca556424ecca428571bb68c",
+          "by_subject_frequency": "sha256:4e5b75e6ed25a8582c97092b6d5b8d3455e681e1abfbf8cb5e387a42fc01682d",
           "n_codes": 627
         },
         "20": {
-          "alphabetical": "sha256:5c9d2440c1817e824c0e6e291d05c3f6249fb61a9258621737b71f0e01f1dc39",
-          "by_measurement_frequency": "sha256:6b310fb955625245f05f84f7925670e3269363703a8c49b5dd98d278fd295789",
-          "by_subject_frequency": "sha256:9113788a83050970a3a83bd517e91cbcbc356cacfba02f4a1c8ccd9bc5702167",
+          "alphabetical": "sha256:e9030d22e6831d437d2dc4eb950867f810e3f49e0ac03b100e27b343c28fdb4b",
+          "by_measurement_frequency": "sha256:11949d126d2e3c32185328d4c5827b43a424cea23f85229e410ca194e530209d",
+          "by_subject_frequency": "sha256:ddb07ec19b4c2db47b63089e1e2c41e276db6760c3c846092709d507701f082c",
           "n_codes": 1984
         }
       }
@@ -220,12 +220,12 @@
     }
   },
   "dataset": {
-    "created_at": "2026-11-17T03:47:02.842769+00:00",
+    "created_at": "2026-11-21T00:27:28.936496+00:00",
     "dataset_name": "SICdb",
-    "dataset_version": "1.0.8:0.2.0",
+    "dataset_version": "1.0.8:0.3.0",
     "description_uri": "https://physionet.org/content/sicdb/1.0.8/",
     "etl_name": "MEDS_transforms",
-    "etl_version": "0.7.0",
+    "etl_version": "0.7.3",
     "license": "PhysioNet Contributor Review Health Data License 1.5.0",
     "meds_version": "0.4.1",
     "other_extension_columns": [
@@ -252,7 +252,7 @@
         ]
       },
       "enriched": true,
-      "enriched_at": "2026-11-17T03:47:12Z",
+      "enriched_at": "2026-11-21T00:27:47Z",
       "ontology_source": "rvandewater/sumeds-ontologies@v0.2.0",
       "options": {
         "child_codes": false,
@@ -264,52 +264,52 @@
         "sibling_codes": false
       },
       "rules": "SICdb",
-      "rules_sha256": "64844539b81a40e6bd47beb7dbc3b372e744b270cb9356ab8e4d570afe9cf6c6",
-      "sumeds_version": "0.6.3"
+      "rules_sha256": "0427b80aaa65e66324eb1f4c080a7d23df45f370b2f2bfe2fc666169bacd543a",
+      "sumeds_version": "0.6.11"
     }
   },
   "dataset_digest": {
     "by_file": {
-      "data/held_out/0.parquet": "sha256:d41c18f8a20a0a43f084518fa0059b855c7e58b5b8a9c03334bbb8e1c3c4784f",
-      "data/held_out/1.parquet": "sha256:ab3c25fea17c0654ff956a5c44127b3a1939ce21c12a5dfed5ff6e438feb36ed",
-      "data/held_out/2.parquet": "sha256:ffcab505f8ff10e91524ef9dfa911a3e0143b6deaa9d2927217380a0bbcb0d96",
-      "data/train/0.parquet": "sha256:ae55b3ce2efc0efaa1f1032b3edc6c192d75994b3ee5c318631c4caaaeedfae1",
-      "data/train/1.parquet": "sha256:38ea421432109b6931b2b05217c139d8fa1c3409d6855baf99a69730426a1cbc",
-      "data/train/10.parquet": "sha256:600759f7503d9b3cb8e671b44d53278007ec8e6a8361a74e5d9aeb58afd83213",
-      "data/train/11.parquet": "sha256:61c6ae137f583536e9c8f5ac90f16ee2d1aceef50acbbaf2a8db6a243f59e446",
-      "data/train/12.parquet": "sha256:f433b7036de14c7efa239589cb7dd52c0b278cb6ffaaecc0e04a06d9a110a8b4",
-      "data/train/13.parquet": "sha256:314441acf6ff7d5537cda4031362d14be90b711c12b0a3f67a92b6f5d5c0d551",
-      "data/train/14.parquet": "sha256:77af1a0d8407436c34003fb1ab3cdb6e92762a184ebc3edab5c47e00d5325c78",
-      "data/train/15.parquet": "sha256:b823ae1077bc47681ec46706bbfa9c874806ad1f760bbd9dd26f17c2a3f0109c",
-      "data/train/16.parquet": "sha256:5d5c2aca476eb25247714e107eb24325b80e22d8be86f9cb3874592c04e63811",
-      "data/train/17.parquet": "sha256:3c406cc4d8a2d651718fd9d0c4b0f9708bcdc03c6da335d7a5d321b20cca1d5e",
-      "data/train/2.parquet": "sha256:c69068973665fde5969688a583d2c36b9dc70f5cb2fd6ab5f0a0d67dff0801ef",
-      "data/train/3.parquet": "sha256:1535605eb718bf9a856bad3d6cad10d5b2d2530dbf1210068d62e47eebe9c302",
-      "data/train/4.parquet": "sha256:e92ef6f3cd8eaa49ce4f067f996d9b474efeed8b370058c9f8bf4bccb84d482f",
-      "data/train/5.parquet": "sha256:5270535c9444327fc365f39a855cbe475f599887d3ac57d6832e695d489dd1b2",
-      "data/train/6.parquet": "sha256:181de4a498cce195add5a477a84cf3c9650fcb51d008ceeb2e1db2b3f08169b7",
-      "data/train/7.parquet": "sha256:685de03a15352b8f5a1e03e34fda925951eee481a90699806c4927ccc3eaaf1c",
-      "data/train/8.parquet": "sha256:173327c318dda5c1bc1c525f406d9cba77e90525a6d4d6d140e538f48d8e4b50",
-      "data/train/9.parquet": "sha256:b37d385478f0b84463a93b44513727ddcfd0ad71308759169c9fd48de1673546",
-      "data/tuning/0.parquet": "sha256:3c0114d3d4dcb90203274dde2c7e68a2d33c55781c166c4454b687bea60e40ac",
-      "data/tuning/1.parquet": "sha256:0e8d9e24b4cade166d4fc11a1a39ef6e8cc66378546472e31ae34ee9851af400",
-      "data/tuning/2.parquet": "sha256:b3f6f770b87521a279bfe1c6d156e84c8c54f1690c0a5206d4b06d745ca68889",
-      "metadata/codes.parquet": "sha256:df61e80237416546b4e86e036c4a4ac8b2aba4f086a7f30fe79d46925c5505c9",
-      "metadata/dataset.json": "sha256:2caf7e85a8f3c9aa6eaf6c0662a638e87bb52e4230f08b0a93e15c0da80b000a",
+      "data/held_out/0.parquet": "sha256:b3e6d7a81719583e4d5ed73e137b26cd19f7df653dc822c454e20689a00e6ad4",
+      "data/held_out/1.parquet": "sha256:a73737b2b92620c0921450ccf661bfadede7eb6c61cee698cd8a9a75a7d06ff8",
+      "data/held_out/2.parquet": "sha256:60f992dfd6c169f4d183ff5745b88ebe7971747f856064eee0554af12177991c",
+      "data/train/0.parquet": "sha256:4ab22806920c29b24a899c1a60a7f572c3b4f8a83bee4557862951a0040e6519",
+      "data/train/1.parquet": "sha256:779efd265f928f9886ca22b51779dc9ea5cab05b1753384e0a4c699370bae92b",
+      "data/train/10.parquet": "sha256:616fe39fb35fcb21e72b8d23dc726933825efe88a61726975eeae3b44a357eb5",
+      "data/train/11.parquet": "sha256:ed3531e89eb0e72b505369c57e9cba3d793ccc5e70e8c4f35dcc82863d48eb65",
+      "data/train/12.parquet": "sha256:a69e416cbf5c42bf7d8fb531989b519ff16d9fd515456363e4d17bab759337c7",
+      "data/train/13.parquet": "sha256:ff839281c684f5e085c42b902fc3f61d1cbbb1e50ac9332cd67b7d5a3d8b1a83",
+      "data/train/14.parquet": "sha256:d15eb97cb76263e951486a9fb5775183d53b372fbec8680c5afe91bdafca6058",
+      "data/train/15.parquet": "sha256:af012e468b1c6376a207bab381094c9d30cf83fcac022509f08a330d03a12065",
+      "data/train/16.parquet": "sha256:05253ab320d127a7120d9ee865c2f624c46b61c11696f8d3c04d1c3f82a7a172",
+      "data/train/17.parquet": "sha256:dc33cb8c93f5f9006ea184466705f6f3367dc0a6d5f7bd1cdc21176d5d3401c5",
+      "data/train/2.parquet": "sha256:131c75f7c9732409e90182437a3ac627a9b98a9a975b41f7eddcf1f797a7063e",
+      "data/train/3.parquet": "sha256:423365ce28f4521d00a885aacb1aac369de33b8bdd9beaa365f2fe15a5a277ca",
+      "data/train/4.parquet": "sha256:442cb88a7b8c5174fa5be9109ece19eb6cd281a96f40fa876e8ab69e5e838360",
+      "data/train/5.parquet": "sha256:c26453cfb96b7acf8c514209bab5e47202ad6c3baf5af246fded517952a4a81d",
+      "data/train/6.parquet": "sha256:a744401a3e56e23b8ff37b6d09c000e7da0ca10e6f80e17d52c1fb60c2364217",
+      "data/train/7.parquet": "sha256:010b5ee4daa057b5b5f01cd3b5b257a271ddd155bff85a0cd421bec9e7e175b0",
+      "data/train/8.parquet": "sha256:82016171f83e12b9437d6f79695b45913a4e297c25fcd26114e3ecf8bc8099ab",
+      "data/train/9.parquet": "sha256:1df4b7d7a54cef27621b2ca5fa96e8122db3e8fed66116f42587b615dd7f3a9b",
+      "data/tuning/0.parquet": "sha256:225e3dede39b4a8b72cf6c7079f30b02e34899240ef78451c3ae8e0048ee3447",
+      "data/tuning/1.parquet": "sha256:d605f4db7d9b742a778d16678cc08fc7af72cf615345cef8d7353aa5e2d3c59e",
+      "data/tuning/2.parquet": "sha256:8ca987cd9a26664e4cb48b91aa857b1116c5b455cef6a42de46a482bbfb73ef6",
+      "metadata/codes.parquet": "sha256:68174c84a1d39c589419558bf656f31143ff685a07be00ebfd3ae701ac78feaa",
+      "metadata/dataset.json": "sha256:a4c9fa890a70ca339cd9bec1d634f27db8498fecd8bcaf4c2be4de90439adfde",
       "metadata/subject_splits.parquet": "sha256:2db462ae44180a5468a2b2df54641acd7a62f0b119e2b119fa82d7aed9bf4e67"
     },
-    "code_metadata": "sha256:ac7b2e1e330b7b111a1ed8d44c11943d932a09fb73dbb862363390bdf87b21d0",
-    "combined": "sha256:6f335be5ac44bcdefadfb4689f932dbc243d61e79795ea4cd09ac12b2080e6aa",
+    "code_metadata": "sha256:c31dfc0769eb18c5f1ece178b8c4c92b3b15960c08dd01ddc24af9c7e2ce0cd0",
+    "combined": "sha256:c69cef5ef8d8ed3d0e20070629a676c110ac23fb0d63b0a237e0f93d1149f242",
     "data": {
-      "digest": "sha256:fc698e9a357809555c928639f7a130a42f4f82f86f3500d24abc0c4482807cd0",
+      "digest": "sha256:b797c67cf45dc19dd98b0773df7a09f52928701e03f2b9bb2ae62f9dbdc87d70",
       "n_files": 24
     },
-    "dataset_metadata": "sha256:e0791b6d135327441688d5a47af8d8db9a6e6455d1f087be90c4aa6e92ac59b2",
+    "dataset_metadata": "sha256:55dcc3470af6d7bec19fcd18db543773ac9c94f9383a616c08f7112ea93229aa",
     "method": "files",
     "n_files": 27,
     "subject_splits": "sha256:374779f95392ad46254c7fab3c03493433c1751f9b5082bccff8454c52662b0d"
   },
-  "extracted_at": "2026-11-17T03:48:24.226833",
+  "extracted_at": "2026-11-21T00:27:53.050699",
   "layout": {
     "code_metadata_columns": {
       "category": "List(String)",
@@ -324,6 +324,7 @@
       "parent_names": "Map(String, String)",
       "standard_concept": "String",
       "unit": "String",
+      "unit_source_value": "String",
       "vocabulary_id": "String"
     },
     "column_dtype_conflicts": {},
