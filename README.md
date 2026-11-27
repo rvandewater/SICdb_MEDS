@@ -332,7 +332,7 @@ process.
 
 ## Breaking changes
 
-### Unreleased
+### 0.4.0 (2026-11-27)
 
 - **`SURVIVAL_OBSERVATION_WINDOW//…` is placed at the death, not at the case admission**
     ([#27](https://github.com/rvandewater/SICdb_MEDS/issues/27)). SICdb fills
