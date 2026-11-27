@@ -220,7 +220,7 @@
     }
   },
   "dataset": {
-    "created_at": "2026-11-21T00:27:28.936496+00:00",
+    "created_at": "2026-11-27T16:34:56.741386+00:00",
     "dataset_name": "SICdb",
     "dataset_version": "1.0.8:0.3.0",
     "description_uri": "https://physionet.org/content/sicdb/1.0.8/",
@@ -252,7 +252,7 @@
         ]
       },
       "enriched": true,
-      "enriched_at": "2026-11-21T00:27:47Z",
+      "enriched_at": "2026-11-27T16:35:14Z",
       "ontology_source": "rvandewater/sumeds-ontologies@v0.2.0",
       "options": {
         "child_codes": false,
@@ -270,46 +270,46 @@
   },
   "dataset_digest": {
     "by_file": {
-      "data/held_out/0.parquet": "sha256:b3e6d7a81719583e4d5ed73e137b26cd19f7df653dc822c454e20689a00e6ad4",
-      "data/held_out/1.parquet": "sha256:a73737b2b92620c0921450ccf661bfadede7eb6c61cee698cd8a9a75a7d06ff8",
-      "data/held_out/2.parquet": "sha256:60f992dfd6c169f4d183ff5745b88ebe7971747f856064eee0554af12177991c",
-      "data/train/0.parquet": "sha256:4ab22806920c29b24a899c1a60a7f572c3b4f8a83bee4557862951a0040e6519",
-      "data/train/1.parquet": "sha256:779efd265f928f9886ca22b51779dc9ea5cab05b1753384e0a4c699370bae92b",
-      "data/train/10.parquet": "sha256:616fe39fb35fcb21e72b8d23dc726933825efe88a61726975eeae3b44a357eb5",
-      "data/train/11.parquet": "sha256:ed3531e89eb0e72b505369c57e9cba3d793ccc5e70e8c4f35dcc82863d48eb65",
-      "data/train/12.parquet": "sha256:a69e416cbf5c42bf7d8fb531989b519ff16d9fd515456363e4d17bab759337c7",
-      "data/train/13.parquet": "sha256:ff839281c684f5e085c42b902fc3f61d1cbbb1e50ac9332cd67b7d5a3d8b1a83",
-      "data/train/14.parquet": "sha256:d15eb97cb76263e951486a9fb5775183d53b372fbec8680c5afe91bdafca6058",
-      "data/train/15.parquet": "sha256:af012e468b1c6376a207bab381094c9d30cf83fcac022509f08a330d03a12065",
-      "data/train/16.parquet": "sha256:05253ab320d127a7120d9ee865c2f624c46b61c11696f8d3c04d1c3f82a7a172",
-      "data/train/17.parquet": "sha256:dc33cb8c93f5f9006ea184466705f6f3367dc0a6d5f7bd1cdc21176d5d3401c5",
-      "data/train/2.parquet": "sha256:131c75f7c9732409e90182437a3ac627a9b98a9a975b41f7eddcf1f797a7063e",
-      "data/train/3.parquet": "sha256:423365ce28f4521d00a885aacb1aac369de33b8bdd9beaa365f2fe15a5a277ca",
-      "data/train/4.parquet": "sha256:442cb88a7b8c5174fa5be9109ece19eb6cd281a96f40fa876e8ab69e5e838360",
-      "data/train/5.parquet": "sha256:c26453cfb96b7acf8c514209bab5e47202ad6c3baf5af246fded517952a4a81d",
-      "data/train/6.parquet": "sha256:a744401a3e56e23b8ff37b6d09c000e7da0ca10e6f80e17d52c1fb60c2364217",
-      "data/train/7.parquet": "sha256:010b5ee4daa057b5b5f01cd3b5b257a271ddd155bff85a0cd421bec9e7e175b0",
-      "data/train/8.parquet": "sha256:82016171f83e12b9437d6f79695b45913a4e297c25fcd26114e3ecf8bc8099ab",
-      "data/train/9.parquet": "sha256:1df4b7d7a54cef27621b2ca5fa96e8122db3e8fed66116f42587b615dd7f3a9b",
-      "data/tuning/0.parquet": "sha256:225e3dede39b4a8b72cf6c7079f30b02e34899240ef78451c3ae8e0048ee3447",
-      "data/tuning/1.parquet": "sha256:d605f4db7d9b742a778d16678cc08fc7af72cf615345cef8d7353aa5e2d3c59e",
-      "data/tuning/2.parquet": "sha256:8ca987cd9a26664e4cb48b91aa857b1116c5b455cef6a42de46a482bbfb73ef6",
+      "data/held_out/0.parquet": "sha256:ee04d2e0bfc7abf42772b1beb6b5b3b0c5d20129c1cfdb0a30cdb961eb1e173a",
+      "data/held_out/1.parquet": "sha256:f259e06bfd374e83c95227dcb1a9baf4e8368f62d472e9c3e2b9c8c3b13caa9d",
+      "data/held_out/2.parquet": "sha256:147efe84544be4a40f9d06eae92c3749eaef326fbeb5c6c25902e3c1b665117a",
+      "data/train/0.parquet": "sha256:d7213a216eacd9ba10720e44ea2d0a1a8798f811db1d6be39b8cc860a1562ace",
+      "data/train/1.parquet": "sha256:b3fada1d499c8105216e5cd880f3db59db3d8e7ede2906f237d63690bf94105c",
+      "data/train/10.parquet": "sha256:89e805cfbce4bed4c0518c30e194d988817c4c5df7ab743a8b869756a206053c",
+      "data/train/11.parquet": "sha256:7c0d4fb1d176d5555fc5a056adb052595ba175a1b31593796b2ceda65b62c2c7",
+      "data/train/12.parquet": "sha256:6052202167b0c289bdf19697d12ed085909630d948d4b1d30952eec295b08650",
+      "data/train/13.parquet": "sha256:084be9215ed8b42450c146a1567cc0278e4e09f14f4e311abae3e650206cb821",
+      "data/train/14.parquet": "sha256:226cdf0c0e06b9e39efd6e1092cc0c4aec3ab6db268263322956fbc7ffd25edd",
+      "data/train/15.parquet": "sha256:39f3539b9372db9e0ecf3f9bf80b236d686683eef63a2278bbda32d681c74889",
+      "data/train/16.parquet": "sha256:a3827be64136e71f15b504ebf20b8e0fe73320e755c95166b679e60b249e6b24",
+      "data/train/17.parquet": "sha256:cc3ca9c0384819b8111730750d6195a0452921854695198dd3e43a2754fbd8e4",
+      "data/train/2.parquet": "sha256:0ea135805aa137b5db41c419292f29181186f6c2025c820ac18b247e16a3b045",
+      "data/train/3.parquet": "sha256:33e5027a266f68fc59b8ee83b8454acf8ffd096410e33705aac823eafa857387",
+      "data/train/4.parquet": "sha256:923a71791e09dbc3825e82cadb57df227c7970cfdde190e6c70aa0f7b3f5a10b",
+      "data/train/5.parquet": "sha256:a72d753616b3dde2657db5ab4fdf42b5a861ac8a8ad1d259e1e2799469a5f19b",
+      "data/train/6.parquet": "sha256:8d57c19d48a34b62d7edffbd29fc873231fc7a0631369dd870d4bd8a7fd0fc98",
+      "data/train/7.parquet": "sha256:495c86aac2564d5a8b18ca11bfd3eb3860b0d1d20be58cf0432b5a16bb9f461b",
+      "data/train/8.parquet": "sha256:349006fcd00fa702e67409ad3bc8d600f24871947ded6f72f8d6a2aceaa3e83f",
+      "data/train/9.parquet": "sha256:3d6ba178662cb256ee3af86cc7f8b45b7e274d558cf5b388e02e55a4a29e5894",
+      "data/tuning/0.parquet": "sha256:8ded82b32464e73912167bdf5c373ad9dcf6c49458b1520c4718437d75ffc0da",
+      "data/tuning/1.parquet": "sha256:cd74cb4fd7bd85f85fe425ae807645f23689c7fcbf95daf07abeff6a5fbb71d4",
+      "data/tuning/2.parquet": "sha256:faa3418fe60ddd1b96992ba5688b2b5ab68889ce63f982578078bfc43a07cf1c",
       "metadata/codes.parquet": "sha256:68174c84a1d39c589419558bf656f31143ff685a07be00ebfd3ae701ac78feaa",
-      "metadata/dataset.json": "sha256:a4c9fa890a70ca339cd9bec1d634f27db8498fecd8bcaf4c2be4de90439adfde",
+      "metadata/dataset.json": "sha256:aadfccdedcb458b3fb033c8bc92ebaa8154f014e2cc393015915e59dfe1777ef",
       "metadata/subject_splits.parquet": "sha256:2db462ae44180a5468a2b2df54641acd7a62f0b119e2b119fa82d7aed9bf4e67"
     },
     "code_metadata": "sha256:c31dfc0769eb18c5f1ece178b8c4c92b3b15960c08dd01ddc24af9c7e2ce0cd0",
-    "combined": "sha256:c69cef5ef8d8ed3d0e20070629a676c110ac23fb0d63b0a237e0f93d1149f242",
+    "combined": "sha256:080c11b7bc49e3477dcdbfd7f650781bbe3b2f6d3d27f2e0204b1454c83652ac",
     "data": {
-      "digest": "sha256:b797c67cf45dc19dd98b0773df7a09f52928701e03f2b9bb2ae62f9dbdc87d70",
+      "digest": "sha256:452dd5bbbce647d17a24ef7ecdf0c5c619a1263e7e0b1359bb91a3962e75a448",
       "n_files": 24
     },
-    "dataset_metadata": "sha256:55dcc3470af6d7bec19fcd18db543773ac9c94f9383a616c08f7112ea93229aa",
+    "dataset_metadata": "sha256:acc21236b50871ca2060becced1346d713eb6b39703854652b9c2de1adf4d72c",
     "method": "files",
     "n_files": 27,
     "subject_splits": "sha256:374779f95392ad46254c7fab3c03493433c1751f9b5082bccff8454c52662b0d"
   },
-  "extracted_at": "2026-11-21T00:27:53.050699",
+  "extracted_at": "2026-11-27T16:35:20.714495",
   "layout": {
     "code_metadata_columns": {
       "category": "List(String)",
@@ -396,18 +396,18 @@
   "meds_summary_stats_version": "0.0.4",
   "per_subject": {
     "measurements_per_day": {
-      "mean": 146.241,
+      "mean": 137.893,
       "n": 21566,
       "quantiles": {
-        "p1": 1.18171,
-        "p25": 43.3562,
-        "p5": 4.11996,
-        "p50": 86.8333,
-        "p75": 178.257,
-        "p95": 494.917,
-        "p99": 977.196
+        "p1": 1.0926,
+        "p25": 33.0539,
+        "p5": 3.06193,
+        "p50": 80.89,
+        "p75": 166.868,
+        "p95": 479.249,
+        "p99": 968.626
       },
-      "std": 183.036
+      "std": 180.946
     },
     "n_events": {
       "mean": 368.245,
@@ -562,43 +562,43 @@
         "n_subjects": 54
       },
       "2017": {
-        "n_measurements": 61618508,
+        "n_measurements": 61617598,
         "n_subjects": 21565
       },
       "2018": {
-        "n_measurements": 2546768,
+        "n_measurements": 2547616,
         "n_subjects": 1678
       },
       "2019": {
-        "n_measurements": 1471658,
+        "n_measurements": 1471672,
         "n_subjects": 573
       },
       "2020": {
-        "n_measurements": 1068544,
+        "n_measurements": 1068562,
         "n_subjects": 400
       },
       "2021": {
-        "n_measurements": 774675,
+        "n_measurements": 774696,
         "n_subjects": 297
       },
       "2022": {
-        "n_measurements": 517734,
+        "n_measurements": 517732,
         "n_subjects": 207
       },
       "2023": {
-        "n_measurements": 266610,
+        "n_measurements": 266608,
         "n_subjects": 133
       },
       "2024": {
-        "n_measurements": 160039,
+        "n_measurements": 160048,
         "n_subjects": 77
       },
       "2025": {
-        "n_measurements": 114591,
+        "n_measurements": 114594,
         "n_subjects": 30
       },
       "<suppressed>": {
-        "n_measurements": 2394,
+        "n_measurements": 2395,
         "n_years": 7
       }
     },
