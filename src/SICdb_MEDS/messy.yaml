@@ -263,11 +263,15 @@ cases:
       d_references:
         AdmissionFormHasSepsis: $ReferenceGlobalID
         description: $ReferenceValue
-  # Present on exactly the cases that carry an OffsetOfDeath (null-agreement 100%): it is the
-  # follow-up window the mortality flag was observed over, so it is the censoring horizon.
+  # Present on exactly the cases that carry an OffsetOfDeath (null-agreement 100%: 5,088 of the
+  # 27,350 cases in 1.0.8, all within a year of the admission): it is the follow-up window the
+  # mortality flag was observed over. Its presence therefore says "this patient died within the
+  # window", so it is placed at the death (`$_death`, never null where this code exists), the
+  # earliest time that is known. At the case admission it told every prediction made during the
+  # case that the patient will die (#27).
   survival_observation_window:
     code: 'f"SURVIVAL_OBSERVATION_WINDOW//{$EstimatedSurvivalObservationTime}"'
-    time: $_adm
+    time: $_death
     icustay_id: $CaseID
     _metadata:
       d_references:
