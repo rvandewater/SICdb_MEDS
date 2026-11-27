@@ -341,6 +341,10 @@ process.
     that the patient would die. It is now timed with that case's `MEDS_DEATH`. Codes, values, rows and
     code metadata are unchanged; only the time moves. To migrate, rebuild; a task that relied on the
     code at admission was reading the outcome.
+    `tests/regression/full_summary_stats.json` regenerated. Counts are unchanged. `per_subject.measurements_per_day` falls
+    (median 86.8 → 80.9), because that rate leaves out `MEDS_DEATH` but not this code, which now
+    stretches the observed span to the death for the 2,656 of 4,142 deceased subjects whose death
+    follows all their other events.
 
 ### 0.3.0 (2026-11-20)
 
